@@ -107,7 +107,6 @@ public class InputManager : MonoBehaviour, InputActions.IPlayerActions, InputAct
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        Debug.Log($"OnJump: phase={context.phase}");
         if (context.performed)
             JumpPressed = true;
     }
