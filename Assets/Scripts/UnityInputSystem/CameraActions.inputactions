@@ -1,0 +1,35 @@
+{
+    "version": 1,
+    "name": "CameraActions",
+    "maps": [
+        {
+            "name": "Camera",
+            "id": "b3df9598-6f84-4dcd-aaf1-da2e1f75e037",
+            "actions": [
+                {
+                    "name": "Look",
+                    "type": "PassThrough",
+                    "id": "200400bc-1643-426c-9657-467dd13f3497",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "4790806c-86cb-4916-82ed-b1b497d713b7",
+                    "path": "<Pointer>/delta",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
