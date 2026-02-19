@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d20902d573ddff54fbe45a70e45c8ad9, type: 3}
+  m_Name: MovementConfig
+  m_EditorClassIdentifier: 
+  WalkSpeed: 10
+  WalkAcceleration: 50
+  SprintSpeed: 16
+  SprintAcceleration: 80
+  CrouchSpeed: 5
+  CrouchAcceleration: 70
+  IdleDeceleration: 100
+  AirSpeed: 15
+  AirAcceleration: 70
+  BaseJumpForce: 10
+  MinJumpTime: 0.1
+  SlideJumpForceBonus: 2
+  SlideJumpSpeedBoost: 1.2
+  SlideJumpMinSpeed: 6
+  MaxSlideJumpSpeed: 60
+  SlideJumpAirControlMultiplier: 0.5
+  BaseSlideSpeed: 15
+  SlideAcceleration: 50
+  MinSlideSpeed: 3
+  EntryBoostMultiplier: 1.15
+  EntryBoostThreshold: 8
+  MaxBoostedSpeed: 25
