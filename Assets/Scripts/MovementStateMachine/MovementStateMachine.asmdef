@@ -1,0 +1,17 @@
+{
+    "name": "MovementStateMachine",
+    "rootNamespace": "",
+    "references": [
+        "GUID:dda57b32398ef19468c04c97a4abb168",
+        "GUID:9c5f858cb14745e4baf6a4e9c29d1e71"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
