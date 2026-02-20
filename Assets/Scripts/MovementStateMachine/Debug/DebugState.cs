@@ -265,7 +265,7 @@ public class DebugState : MonoBehaviour
         float hSpeed = motor.Speed;
         float vSpeed = motor.Velocity.y;
         
-        GUI.color = hSpeed > motor.SpeedThreshold ? Color.green : Color.white;
+        GUI.color = hSpeed > stateMachine.Config.MinSlideSpeed ? Color.green : Color.white;
         GUILayout.Label($"Horizontal: {hSpeed:F2} m/s", cachedLabelStyle);
         GUI.color = Color.white;
         
@@ -368,7 +368,7 @@ public class DebugState : MonoBehaviour
         Rect graphRect = GUILayoutUtility.GetRect(graphWidth, graphHeight);
         DrawSpeedGraph(graphRect);
         
-        GUILayout.Label($"Max: {maxRecordedSpeed:F1} m/s | Threshold: {motor.SpeedThreshold:F1}", cachedLabelStyle);
+        GUILayout.Label($"Max: {maxRecordedSpeed:F1} m/s | Threshold: {stateMachine.Config.MinSlideSpeed:F1}", cachedLabelStyle);
         
         GUILayout.EndArea();
     }
@@ -496,7 +496,7 @@ public class DebugState : MonoBehaviour
         GUI.color = Color.Lerp(Color.red, Color.green, fill);
         GUI.DrawTexture(new Rect(barRect.x, barRect.y, barRect.width * fill, barRect.height), whiteTexture);
         
-        float thresholdPos = motor.SpeedThreshold / maxSpeed;
+        float thresholdPos = stateMachine.Config.MinSlideSpeed / maxSpeed;
         GUI.color = Color.yellow;
         GUI.DrawTexture(new Rect(barRect.x + barRect.width * thresholdPos - 1, barRect.y, 2, barRect.height), whiteTexture);
         
@@ -562,7 +562,7 @@ public class DebugState : MonoBehaviour
         GUI.DrawTexture(rect, whiteTexture);
         
         float maxVal = Mathf.Max(maxRecordedSpeed, 1f);
-        float thresholdY = rect.y + rect.height * (1 - motor.SpeedThreshold / maxVal);
+        float thresholdY = rect.y + rect.height * (1 - stateMachine.Config.MinSlideSpeed / maxVal);
         GUI.color = new Color(1f, 1f, 0f, 0.3f);
         GUI.DrawTexture(new Rect(rect.x, thresholdY, rect.width, 1), whiteTexture);
         

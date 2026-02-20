@@ -25,7 +25,7 @@ public class CrouchState : MovementState
         if (SM.Input.JumpPressed && SM.Motor.CanJump)
             return MovementType.Jumping;
         
-        if (SM.Motor.Speed > SM.Motor.SpeedThreshold && SM.Motor.CanStartSlide())
+        if (SM.Motor.Speed > SM.Config.MinSlideSpeed && SM.Motor.CanStartSlide())
             return MovementType.Sliding;
         
         if (!SM.Input.CrouchHeld)

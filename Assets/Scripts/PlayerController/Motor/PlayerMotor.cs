@@ -8,7 +8,6 @@ public class PlayerMotor : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private float gravity = 20f;
     [SerializeField] private float groundStickForce = 5f;
-    [SerializeField] private float speedThreshold = 5.5f;
     
     [Header("Ground Detection")]
     [SerializeField] private float groundCheckDistance = 0.3f;
@@ -73,7 +72,6 @@ public class PlayerMotor : MonoBehaviour
     public bool CanJump => Time.time - lastGroundedTime < coyoteTimeDuration;
     public float TimeSinceGrounded => Time.time - lastGroundedTime;
     public float Speed => new Vector3(Velocity.x, 0, Velocity.z).magnitude;
-    public float SpeedThreshold => speedThreshold;
     public float GroundAngle => cachedGroundAngle;
     public Vector3 GroundNormal => cachedGroundNormal;
     
