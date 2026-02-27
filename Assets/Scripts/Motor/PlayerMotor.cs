@@ -33,11 +33,6 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] private float dashMomentumPreserve = 0.3f;
     
     [SerializeField] private GameObject cameraObject;
-    
-    /// <summary>
-    /// Текущая скорость игрока. Для изменения используйте SetHorizontalVelocity / AddHorizontalImpulse.
-    /// Прямая запись через Velocity допустима только внутри PlayerMotor.
-    /// </summary>
     public Vector3 Velocity { get; private set; }
     
     public GameObject CameraObject => cameraObject;
@@ -124,7 +119,7 @@ public class PlayerMotor : MonoBehaviour
         }
     }
     
-    // Crouch debug properties
+    // Crouch debug properties TODO: (УБРАТЬ)
     public float CurrentHeight => currentHeight;
     public float OriginalHeight => originalHeight;
     public float TargetHeight => targetHeight;
@@ -302,7 +297,7 @@ public class PlayerMotor : MonoBehaviour
     }
     
     /// <summary>
-    /// Добавляет заряды дэша (например, от способности)
+    /// Добавляет заряды дэша.
     /// </summary>
     public void AddDashCharges(int amount)
     {
@@ -594,14 +589,10 @@ public class PlayerMotor : MonoBehaviour
     
     /// <summary>
     /// Возвращает точную информацию о поверхности под игроком.
-    /// Всегда делает прямой Raycast (не SphereCast) для точных нормалей склона.
-    /// Результат кэшируется отдельно от IsGrounded.
+    /// Берёт ближайшее попадание.
     /// </summary>
     public bool GetGroundInfo(out Vector3 normal, out float angle)
     {
-        // Отдельный покадровый кэш для GetGroundInfo, независимый от IsGrounded.
-        // SphereCast (из CheckGroundedByRaycast) даёт неточные нормали на склонах,
-        // поэтому здесь всегда используется прямой Raycast.
         if (Time.frameCount == lastGroundInfoFrame)
         {
             normal = cachedPreciseNormal;
@@ -621,42 +612,63 @@ public class PlayerMotor : MonoBehaviour
             5f, groundMask, QueryTriggerInteraction.Ignore
         );
         
+        // Ищем ближайший валидный хит
+        float closestDist = float.MaxValue;
+        int closestIdx = -1;
+        
         for (int i = 0; i < hitCount; i++)
         {
             ref var hit = ref rayHitBuffer[i];
             
+            // Пропускаем себя
             if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
                 continue;
             if (hit.collider == controller)
                 continue;
             
-            angle = Vector3.Angle(Vector3.up, hit.normal);
+            // Пропускаем потолки и стены: нормаль должна смотреть вверх (это пол)
+            if (hit.normal.y <= 0.01f)
+                continue;
             
-            if (angle < 2f)
+            // Пропускаем хиты выше игрока (origin внутри коллайдера потолка)
+            if (hit.point.y > transform.position.y + 0.1f)
+                continue;
+            
+            if (hit.distance < closestDist)
             {
-                normal = Vector3.up;
-                angle = 0f;
+                closestDist = hit.distance;
+                closestIdx = i;
             }
-            else
-            {
-                normal = hit.normal;
-            }
-            
-            // Обновляем основной кэш тоже — он используется в ApplyGravity, ProjectOnGround и дебаге
-            cachedGroundNormal = normal;
-            cachedGroundAngle = angle;
-            
-            // Точный кэш для GetGroundInfo
-            cachedPreciseNormal = normal;
-            cachedPreciseAngle = angle;
-            cachedGroundInfoResult = true;
-            return true;
         }
         
-        cachedPreciseNormal = Vector3.up;
-        cachedPreciseAngle = 0f;
-        cachedGroundInfoResult = false;
-        return false;
+        if (closestIdx < 0)
+        {
+            cachedPreciseNormal = Vector3.up;
+            cachedPreciseAngle = 0f;
+            cachedGroundInfoResult = false;
+            return false;
+        }
+        
+        ref var closest = ref rayHitBuffer[closestIdx];
+        angle = Vector3.Angle(Vector3.up, closest.normal);
+        
+        if (angle < 2f)
+        {
+            normal = Vector3.up;
+            angle = 0f;
+        }
+        else
+        {
+            normal = closest.normal;
+        }
+        
+        cachedGroundNormal = normal;
+        cachedGroundAngle = angle;
+        
+        cachedPreciseNormal = normal;
+        cachedPreciseAngle = angle;
+        cachedGroundInfoResult = true;
+        return true;
     }
     
     #endregion
@@ -973,7 +985,7 @@ public class PlayerMotor : MonoBehaviour
     }
     
     /// <summary>
-    /// Принудительно встать (для особых случаев, например респавна).
+    /// Принудительно встать.
     /// </summary>
     public void ForceResetHeight()
     {
@@ -1061,15 +1073,12 @@ public class PlayerMotor : MonoBehaviour
         Vector3 point1 = currentTop + Vector3.up * checkRadius;
         Vector3 point2 = targetTop - Vector3.up * checkRadius;
         
-        // Динамическая маска: исключаем свой слой вместо хардкода
-        int layerMask = ~(1 << gameObject.layer);
-        
         int overlapCount = Physics.OverlapCapsuleNonAlloc(
             point1,
             point2,
             checkRadius,
             overlapBuffer,
-            layerMask,
+            groundMask,
             QueryTriggerInteraction.Ignore
         );
         
@@ -1084,14 +1093,6 @@ public class PlayerMotor : MonoBehaviour
         }
         
         return true;
-    }
-    
-    /// <summary>
-    /// Проверяет, находимся ли мы под низким потолком.
-    /// </summary>
-    public bool IsUnderLowCeiling()
-    {
-        return IsCrouching && !CanStandUp();
     }
     
     #endregion
