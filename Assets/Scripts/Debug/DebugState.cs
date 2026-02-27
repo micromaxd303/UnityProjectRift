@@ -53,6 +53,26 @@ public class DebugState : MonoBehaviour
     private GUIStyle cachedHintStyle;
     private bool stylesInitialized;
     
+    // Кэшированные значения motor (обновляются в Update, читаются в OnGUI)
+    private bool cachedIsGrounded;
+    private float cachedGroundAngle;
+    private Vector3 cachedGroundNormal;
+    private float cachedSpeed;
+    private float cachedVelocityY;
+    private bool cachedIsCrouching;
+    private bool cachedIsFullyCrouched;
+    private bool cachedCanStandUp;
+    private bool cachedCanDash;
+    private bool cachedIsDashing;
+    private float cachedDashProgress;
+    private int cachedDashCharges;
+    private int cachedMaxDashCharges;
+    private float cachedRegenProgress;
+    private float cachedCurrentHeight;
+    private float cachedOriginalHeight;
+    private float cachedTargetHeight;
+    private bool cachedCanSlide;
+    
     private void Awake()
     {
         boxTexture = MakeTexture(new Color(0, 0, 0, 0.85f));
@@ -131,11 +151,31 @@ public class DebugState : MonoBehaviour
         
         currentStateTime += Time.deltaTime;
         
+        // Кэшируем все значения motor один раз за кадр
+        cachedIsGrounded = motor.IsGrounded;
+        cachedGroundAngle = motor.GroundAngle;
+        cachedGroundNormal = motor.GroundNormal;
+        cachedSpeed = motor.Speed;
+        cachedVelocityY = motor.Velocity.y;
+        cachedIsCrouching = motor.IsCrouching;
+        cachedIsFullyCrouched = motor.IsFullyCrouched;
+        cachedCanStandUp = motor.CanStandUp();
+        cachedCanDash = motor.CanDash;
+        cachedIsDashing = motor.IsDashing;
+        cachedDashProgress = motor.DashProgress;
+        cachedDashCharges = motor.CurrentDashCharges;
+        cachedMaxDashCharges = motor.MaxDashCharges;
+        cachedRegenProgress = motor.NextChargeRegenProgress;
+        cachedCurrentHeight = motor.CurrentHeight;
+        cachedOriginalHeight = motor.OriginalHeight;
+        cachedTargetHeight = motor.TargetHeight;
+        cachedCanSlide = motor.CanStartSlide();
+        
         if (showDebug && Time.frameCount % 2 == 0)
         {
-            speedHistory[speedHistoryIndex] = motor.Speed;
+            speedHistory[speedHistoryIndex] = cachedSpeed;
             speedHistoryIndex = (speedHistoryIndex + 1) % speedHistory.Length;
-            maxRecordedSpeed = Mathf.Max(maxRecordedSpeed, motor.Speed);
+            maxRecordedSpeed = Mathf.Max(maxRecordedSpeed, cachedSpeed);
         }
     }
     
@@ -238,8 +278,8 @@ public class DebugState : MonoBehaviour
         GUILayout.Label($"[*] {stateMachine.CurrentStateType}", cachedHeaderStyle);
         GUI.color = Color.white;
         
-        GUILayout.Label($"Speed: {motor.Speed:F1} | Y: {motor.Velocity.y:F1}", cachedLabelStyle);
-        GUILayout.Label($"Ground: {(motor.IsGrounded ? "Yes" : "No")} | Angle: {motor.GroundAngle:F0}°", cachedLabelStyle);
+        GUILayout.Label($"Speed: {cachedSpeed:F1} | Y: {cachedVelocityY:F1}", cachedLabelStyle);
+        GUILayout.Label($"Ground: {(cachedIsGrounded ? "Yes" : "No")} | Angle: {cachedGroundAngle:F0}°", cachedLabelStyle);
         
         GUILayout.EndArea();
     }
@@ -262,64 +302,59 @@ public class DebugState : MonoBehaviour
         // Velocity
         GUILayout.Label("VELOCITY", cachedSectionStyle);
         
-        float hSpeed = motor.Speed;
-        float vSpeed = motor.Velocity.y;
-        
-        GUI.color = hSpeed > stateMachine.Config.MinSlideSpeed ? Color.green : Color.white;
-        GUILayout.Label($"Horizontal: {hSpeed:F2} m/s", cachedLabelStyle);
+        GUI.color = cachedSpeed > stateMachine.Config.MinSlideSpeed ? Color.green : Color.white;
+        GUILayout.Label($"Horizontal: {cachedSpeed:F2} m/s", cachedLabelStyle);
         GUI.color = Color.white;
         
-        GUI.color = vSpeed > 0 ? Color.cyan : (vSpeed < -10 ? Color.red : Color.white);
-        GUILayout.Label($"Vertical: {vSpeed:F2} m/s", cachedLabelStyle);
+        GUI.color = cachedVelocityY > 0 ? Color.cyan : (cachedVelocityY < -10 ? Color.red : Color.white);
+        GUILayout.Label($"Vertical: {cachedVelocityY:F2} m/s", cachedLabelStyle);
         GUI.color = Color.white;
         
         GUILayout.Label($"Max Recorded: {maxRecordedSpeed:F1} m/s", cachedLabelStyle);
         
-        DrawSpeedBar(hSpeed, 30f, 260);
+        DrawSpeedBar(cachedSpeed, 30f, 260);
         
         GUILayout.Space(8);
         
         // Surface
         GUILayout.Label("SURFACE", cachedSectionStyle);
-        GUILayout.Label($"Grounded: {(motor.IsGrounded ? "Yes" : "No")}", cachedLabelStyle);
-        GUILayout.Label($"Angle: {motor.GroundAngle:F1}° | Normal: {motor.GroundNormal.y:F2}", cachedLabelStyle);
-        GUILayout.Label($"Can Slide: {(motor.CanStartSlide() ? "Yes" : "No")}", cachedLabelStyle);
+        GUILayout.Label($"Grounded: {(cachedIsGrounded ? "Yes" : "No")}", cachedLabelStyle);
+        GUILayout.Label($"Angle: {cachedGroundAngle:F1}° | Normal: {cachedGroundNormal.y:F2}", cachedLabelStyle);
+        GUILayout.Label($"Can Slide: {(cachedCanSlide ? "Yes" : "No")}", cachedLabelStyle);
         
         GUILayout.Space(8);
         
         // Crouch
         GUILayout.Label("CROUCH", cachedSectionStyle);
         
-        bool canStand = motor.CanStandUp();
-        
-        GUI.color = motor.IsCrouching ? new Color(1f, 0.5f, 0f) : Color.white;
-        GUILayout.Label($"Crouching: {(motor.IsCrouching ? "Yes" : "No")} | Fully: {(motor.IsFullyCrouched ? "Yes" : "No")}", cachedLabelStyle);
+        GUI.color = cachedIsCrouching ? new Color(1f, 0.5f, 0f) : Color.white;
+        GUILayout.Label($"Crouching: {(cachedIsCrouching ? "Yes" : "No")} | Fully: {(cachedIsFullyCrouched ? "Yes" : "No")}", cachedLabelStyle);
         GUI.color = Color.white;
         
-        GUI.color = canStand ? Color.green : Color.red;
-        GUILayout.Label($"Can Stand: {(canStand ? "Yes" : "No")} | Under Ceiling: {(!canStand && motor.IsCrouching ? "Yes" : "No")}", cachedLabelStyle);
+        GUI.color = cachedCanStandUp ? Color.green : Color.red;
+        GUILayout.Label($"Can Stand: {(cachedCanStandUp ? "Yes" : "No")} | Under Ceiling: {(!cachedCanStandUp && cachedIsCrouching ? "Yes" : "No")}", cachedLabelStyle);
         GUI.color = Color.white;
         
-        GUILayout.Label($"Height: {motor.CurrentHeight:F2} / {motor.OriginalHeight:F2}", cachedLabelStyle);
+        GUILayout.Label($"Height: {cachedCurrentHeight:F2} / {cachedOriginalHeight:F2}", cachedLabelStyle);
         
-        DrawHeightBar(motor.CurrentHeight, motor.OriginalHeight, motor.TargetHeight, 260);
+        DrawHeightBar(cachedCurrentHeight, cachedOriginalHeight, cachedTargetHeight, 260);
         
         GUILayout.Space(8);
         
         // Dash
         GUILayout.Label("DASH", cachedSectionStyle);
         
-        GUI.color = motor.IsDashing ? Color.red : Color.white;
-        GUILayout.Label($"Dashing: {(motor.IsDashing ? "Yes" : "No")} | Progress: {motor.DashProgress:P0}", cachedLabelStyle);
+        GUI.color = cachedIsDashing ? Color.red : Color.white;
+        GUILayout.Label($"Dashing: {(cachedIsDashing ? "Yes" : "No")} | Progress: {cachedDashProgress:P0}", cachedLabelStyle);
         GUI.color = Color.white;
         
-        GUI.color = motor.CanDash ? Color.green : Color.gray;
-        GUILayout.Label($"Can Dash: {(motor.CanDash ? "Yes" : "No")}", cachedLabelStyle);
+        GUI.color = cachedCanDash ? Color.green : Color.gray;
+        GUILayout.Label($"Can Dash: {(cachedCanDash ? "Yes" : "No")}", cachedLabelStyle);
         GUI.color = Color.white;
         
-        GUILayout.Label($"Charges: {motor.CurrentDashCharges} / {motor.MaxDashCharges}", cachedLabelStyle);
+        GUILayout.Label($"Charges: {cachedDashCharges} / {cachedMaxDashCharges}", cachedLabelStyle);
         
-        DrawDashChargesBar(motor.CurrentDashCharges, motor.MaxDashCharges, motor.NextChargeRegenProgress, 260);
+        DrawDashChargesBar(cachedDashCharges, cachedMaxDashCharges, cachedRegenProgress, 260);
         
         GUILayout.Space(8);
         
@@ -360,7 +395,7 @@ public class DebugState : MonoBehaviour
         GUILayout.BeginArea(new Rect(20, 15, graphWidth + 20, graphHeight + 70));
         
         GUI.color = GetStateColor(stateMachine.CurrentStateType);
-        GUILayout.Label($"[*] {stateMachine.CurrentStateType} | {motor.Speed:F1} m/s", cachedHeaderStyle);
+        GUILayout.Label($"[*] {stateMachine.CurrentStateType} | {cachedSpeed:F1} m/s", cachedHeaderStyle);
         GUI.color = Color.white;
         
         GUILayout.Space(5);

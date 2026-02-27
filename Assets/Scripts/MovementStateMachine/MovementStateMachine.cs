@@ -37,10 +37,10 @@ public class MovementStateMachine : MonoBehaviour
         return condition switch
         {
             TransitionMatrixAsset.ConditionType.SpeedAboveThreshold =>
-                Motor.Speed > transitionMatrixAsset.SpeedThreshold,
+                Motor.Speed > config.MinSlideSpeed,
 
             TransitionMatrixAsset.ConditionType.SpeedBelowThreshold =>
-                Motor.Speed < transitionMatrixAsset.SpeedThreshold,
+                Motor.Speed < config.MinSlideSpeed,
 
             TransitionMatrixAsset.ConditionType.IsGrounded =>
                 Motor.IsGrounded,

@@ -26,11 +26,11 @@ MonoBehaviour:
   SlideJumpForceBonus: 2
   SlideJumpSpeedBoost: 1.2
   SlideJumpMinSpeed: 6
-  MaxSlideJumpSpeed: 60
-  SlideJumpAirControlMultiplier: 0.5
+  MaxSlideJumpSpeed: 20
+  SlideJumpAirControlMultiplier: 0
   BaseSlideSpeed: 15
   SlideAcceleration: 50
-  MinSlideSpeed: 5
+  MinSlideSpeed: 7
   EntryBoostMultiplier: 1.15
   EntryBoostThreshold: 8
   MaxBoostedSpeed: 20

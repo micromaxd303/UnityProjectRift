@@ -24,9 +24,6 @@ public class TransitionMatrixAsset : ScriptableObject
     }
 
     [SerializeField] private List<TransitionRule> rules = new();
-    [SerializeField] private float speedThreshold = 5f;
-    
-    public float SpeedThreshold => speedThreshold;
 
     public TransitionMatrix Build(Func<ConditionType, bool> conditionResolver)
     {
