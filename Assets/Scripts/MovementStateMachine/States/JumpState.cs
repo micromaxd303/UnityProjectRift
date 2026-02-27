@@ -24,13 +24,11 @@ public class JumpingState : MovementState
             if (direction.sqrMagnitude > 0.01f)
             {
                 float currentSpeed = SM.Motor.Speed;
-                float boostedSpeed = currentSpeed * cfg.SlideJumpSpeedBoost;
-                boostedSpeed = Mathf.Min(boostedSpeed, cfg.MaxSlideJumpSpeed);
+                float boostedSpeed = Mathf.Min(currentSpeed * cfg.SlideJumpSpeedBoost, cfg.MaxSlideJumpSpeed);
                 
                 if (currentSpeed < cfg.MaxSlideJumpSpeed)
                 {
-                    SM.Motor.Velocity.x = direction.x * boostedSpeed;
-                    SM.Motor.Velocity.z = direction.z * boostedSpeed;
+                    SM.Motor.SetHorizontalVelocity(direction, boostedSpeed);
                 }
             }
         }

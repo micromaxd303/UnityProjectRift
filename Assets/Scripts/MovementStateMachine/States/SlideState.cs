@@ -17,14 +17,12 @@ public class SlidingState : MovementState
         // Буст при входе с разбега
         if (entrySpeed >= cfg.EntryBoostThreshold)
         {
-            float boostedSpeed = entrySpeed * cfg.EntryBoostMultiplier;
-            boostedSpeed = Mathf.Min(boostedSpeed, cfg.MaxBoostedSpeed);
+            float boostedSpeed = Mathf.Min(entrySpeed * cfg.EntryBoostMultiplier, cfg.MaxBoostedSpeed);
             
             Vector3 direction = SM.Motor.GetMoveDirection();
             if (direction.sqrMagnitude > 0.01f)
             {
-                SM.Motor.Velocity.x = direction.x * boostedSpeed;
-                SM.Motor.Velocity.z = direction.z * boostedSpeed;
+                SM.Motor.SetHorizontalVelocity(direction, boostedSpeed);
             }
         }
     }

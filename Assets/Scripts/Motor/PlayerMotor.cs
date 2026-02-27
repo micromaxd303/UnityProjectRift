@@ -22,18 +22,25 @@ public class PlayerMotor : MonoBehaviour
     [Header("Crouch Settings")]
     [SerializeField] private float crouchHeightMultiplier = 0.5f;
     [SerializeField] private float crouchTransitionSpeed = 10f;
-    [SerializeField] private Transform meshRoot; // Корень модели персонажа
+    [SerializeField] private Transform meshRoot;
     
     [Header("Dash Settings")]
     [SerializeField] private int maxDashCharges = 2;
     [SerializeField] private float dashChargeRegenTime = 2f;
     [SerializeField] private float dashDistance = 8f;
-    [SerializeField] private float dashDuration = 0.1f; // Короткий для резкости
-    [SerializeField] private float dashCooldownBetweenUses = 0.1f; // Минимальная пауза между дэшами
-    [SerializeField] private float dashMomentumPreserve = 0.3f; // Сколько импульса сохраняется после дэша (0-1)
+    [SerializeField] private float dashDuration = 0.1f;
+    [SerializeField] private float dashCooldownBetweenUses = 0.1f;
+    [SerializeField] private float dashMomentumPreserve = 0.3f;
     
-    public Vector3 Velocity;
-    public GameObject CameraObject;
+    [SerializeField] private GameObject cameraObject;
+    
+    /// <summary>
+    /// Текущая скорость игрока. Для изменения используйте SetHorizontalVelocity / AddHorizontalImpulse.
+    /// Прямая запись через Velocity допустима только внутри PlayerMotor.
+    /// </summary>
+    public Vector3 Velocity { get; private set; }
+    
+    public GameObject CameraObject => cameraObject;
     
     private float lastGroundedTime;
     private float lastTrueGroundedTime;
@@ -47,14 +54,27 @@ public class PlayerMotor : MonoBehaviour
     private float currentHeight;
     private bool wantsToCrouch;
     
-    // Кэш информации о земле
+    // Кэш информации о земле (обновляется раз за кадр)
     private bool wasGroundedLastFrame;
     private Vector3 cachedGroundNormal = Vector3.up;
     private float cachedGroundAngle;
+    private bool cachedIsGroundedResult;
+    private int lastGroundCheckFrame = -1;
+    
+    // Отдельный покадровый кэш для GetGroundInfo (прямой Raycast, точные нормали)
+    private Vector3 cachedPreciseNormal = Vector3.up;
+    private float cachedPreciseAngle;
+    private bool cachedGroundInfoResult;
+    private int lastGroundInfoFrame = -1;
+    
+    // Предаллоцированные буферы для физ-запросов (избегаем GC аллокации)
+    private readonly RaycastHit[] sphereHitBuffer = new RaycastHit[8];
+    private readonly RaycastHit[] rayHitBuffer = new RaycastHit[8];
+    private readonly Collider[] overlapBuffer = new Collider[8];
     
     // Dash state
     private int currentDashCharges;
-    private float[] chargeRegenTimers; // Индивидуальные таймеры для каждого заряда
+    private float[] chargeRegenTimers;
     private float lastDashTime;
     private bool isDashing;
     private float dashTimer;
@@ -66,20 +86,58 @@ public class PlayerMotor : MonoBehaviour
     public event Action OnDashStarted;
     public event Action OnDashEnded;
     
-    public bool IsGrounded => CheckGrounded();
+    // --- Public Properties ---
+    
+    public bool IsGrounded
+    {
+        get
+        {
+            if (Time.frameCount != lastGroundCheckFrame)
+            {
+                cachedIsGroundedResult = CheckGrounded();
+                lastGroundCheckFrame = Time.frameCount;
+            }
+            return cachedIsGroundedResult;
+        }
+    }
+    
     public bool IsCrouching { get; private set; }
     public bool IsFullyCrouched => IsCrouching && Mathf.Abs(currentHeight - targetHeight) < 0.01f;
     public bool CanJump => Time.time - lastGroundedTime < coyoteTimeDuration;
     public float TimeSinceGrounded => Time.time - lastGroundedTime;
     public float Speed => new Vector3(Velocity.x, 0, Velocity.z).magnitude;
-    public float GroundAngle => cachedGroundAngle;
-    public Vector3 GroundNormal => cachedGroundNormal;
+    public float GroundAngle
+    {
+        get
+        {
+            EnsurePreciseGroundInfo();
+            return cachedPreciseAngle;
+        }
+    }
+    
+    public Vector3 GroundNormal
+    {
+        get
+        {
+            EnsurePreciseGroundInfo();
+            return cachedPreciseNormal;
+        }
+    }
     
     // Crouch debug properties
     public float CurrentHeight => currentHeight;
     public float OriginalHeight => originalHeight;
     public float TargetHeight => targetHeight;
-    public float CrouchProgress => Mathf.Clamp01(1f - (currentHeight - targetHeight) / (originalHeight - originalHeight * crouchHeightMultiplier));
+    
+    public float CrouchProgress
+    {
+        get
+        {
+            float range = originalHeight * (1f - crouchHeightMultiplier);
+            if (range < 0.001f) return 1f;
+            return Mathf.Clamp01(1f - (currentHeight - targetHeight) / range);
+        }
+    }
     
     // Dash properties
     public int CurrentDashCharges => currentDashCharges;
@@ -97,7 +155,6 @@ public class PlayerMotor : MonoBehaviour
         {
             if (currentDashCharges >= maxDashCharges) return 1f;
             
-            // Находим заряд который восстанавливается дольше всего (ближе всего к завершению)
             float maxProgress = 0f;
             for (int i = 0; i < maxDashCharges - currentDashCharges; i++)
             {
@@ -113,26 +170,34 @@ public class PlayerMotor : MonoBehaviour
     
     private void Awake()
     {
+        if (controller == null)
+        {
+            Debug.LogError("[PlayerMotor] CharacterController не назначен!", this);
+            enabled = false;
+            return;
+        }
+        
+        if (cameraObject == null)
+        {
+            Debug.LogError("[PlayerMotor] CameraObject не назначен!", this);
+        }
+        
         originalHeight = controller.height;
-        // Сохраняем оригинальный центр как он настроен в инспекторе
         originalCenter = controller.center;
         
         currentHeight = originalHeight;
         targetHeight = originalHeight;
         
-        // Запоминаем позицию камеры если она дочерний объект
-        if (CameraObject != null && CameraObject.transform.parent == transform)
+        if (cameraObject != null && cameraObject.transform.parent == transform)
         {
-            originalCameraY = CameraObject.transform.localPosition.y;
+            originalCameraY = cameraObject.transform.localPosition.y;
         }
         
-        // Запоминаем и сбрасываем позицию меша
         if (meshRoot != null)
         {
             originalMeshY = meshRoot.localPosition.y;
         }
         
-        // Инициализация дэша
         InitializeDashSystem();
     }
     
@@ -141,12 +206,62 @@ public class PlayerMotor : MonoBehaviour
         if (IsGrounded)
             lastGroundedTime = Time.time;
         
-        // Плавный переход высоты
         UpdateCrouchTransition();
-        
-        // Восстановление зарядов дэша
         UpdateDashChargeRegen();
     }
+    
+    #region Velocity Accessors
+    
+    /// <summary>
+    /// Устанавливает горизонтальную скорость в заданном направлении.
+    /// Направление нормализуется и проецируется на горизонталь автоматически.
+    /// </summary>
+    public void SetHorizontalVelocity(Vector3 direction, float speed)
+    {
+        direction.y = 0;
+        if (direction.sqrMagnitude < 0.001f) return;
+        direction.Normalize();
+        
+        var vel = Velocity;
+        vel.x = direction.x * speed;
+        vel.z = direction.z * speed;
+        Velocity = vel;
+    }
+    
+    /// <summary>
+    /// Добавляет горизонтальный импульс в заданном направлении.
+    /// </summary>
+    public void AddHorizontalImpulse(Vector3 direction, float force)
+    {
+        direction.y = 0;
+        if (direction.sqrMagnitude < 0.001f) return;
+        direction.Normalize();
+        
+        var vel = Velocity;
+        vel.x += direction.x * force;
+        vel.z += direction.z * force;
+        Velocity = vel;
+    }
+    
+    /// <summary>
+    /// Устанавливает вертикальную составляющую скорости.
+    /// </summary>
+    public void SetVerticalVelocity(float y)
+    {
+        var vel = Velocity;
+        vel.y = y;
+        Velocity = vel;
+    }
+    
+    /// <summary>
+    /// Полностью обнуляет скорость.
+    /// </summary>
+    public void ResetVelocity()
+    {
+        Velocity = Vector3.zero;
+    }
+    
+    #endregion
     
     #region Dash System
     
@@ -166,22 +281,18 @@ public class PlayerMotor : MonoBehaviour
         int oldMax = maxDashCharges;
         maxDashCharges = newMax;
         
-        // Пересоздаём массив таймеров
         float[] oldTimers = chargeRegenTimers;
         chargeRegenTimers = new float[newMax];
         
-        // Копируем существующие таймеры
         for (int i = 0; i < Mathf.Min(oldTimers.Length, newMax); i++)
         {
             chargeRegenTimers[i] = oldTimers[i];
         }
         
-        // Если добавились заряды — даём их сразу
         if (newMax > oldMax)
         {
             currentDashCharges += (newMax - oldMax);
         }
-        // Если убавились — ограничиваем текущие
         else if (currentDashCharges > newMax)
         {
             currentDashCharges = newMax;
@@ -200,7 +311,6 @@ public class PlayerMotor : MonoBehaviour
         
         if (currentDashCharges != oldCharges)
         {
-            // Убираем таймеры восстановления для добавленных зарядов
             int chargesToClear = currentDashCharges - oldCharges;
             for (int i = 0; i < chargesToClear && i < chargeRegenTimers.Length; i++)
             {
@@ -228,10 +338,8 @@ public class PlayerMotor : MonoBehaviour
     {
         if (currentDashCharges >= maxDashCharges) return;
         
-        // Тикает только первый таймер (самый старый, восстановится первым)
         chargeRegenTimers[0] += Time.deltaTime;
         
-        // Проверяем первый таймер
         while (currentDashCharges < maxDashCharges && chargeRegenTimers[0] >= dashChargeRegenTime)
         {
             currentDashCharges++;
@@ -253,7 +361,6 @@ public class PlayerMotor : MonoBehaviour
     {
         if (!CanDash) return false;
         
-        // Определяем направление
         Vector3 direction;
         if (inputDirection.magnitude > 0.1f)
         {
@@ -273,14 +380,11 @@ public class PlayerMotor : MonoBehaviour
     public bool StartDash(Vector3 worldDirection)
     {
         if (!CanDash) return false;
-        // Тратим заряд
+        
         currentDashCharges--;
         lastDashTime = Time.time;
         
-        // Добавляем новый таймер восстановления в конец очереди активных таймеров
-        // Количество активных таймеров = количество недостающих зарядов
         int activeTimers = maxDashCharges - currentDashCharges;
-        // Новый таймер идёт в позицию (activeTimers - 1), так как мы только что уменьшили currentDashCharges
         int newTimerSlot = activeTimers - 1;
         if (newTimerSlot >= 0 && newTimerSlot < chargeRegenTimers.Length)
         {
@@ -292,13 +396,18 @@ public class PlayerMotor : MonoBehaviour
         // Начинаем дэш
         isDashing = true;
         dashTimer = dashDuration;
-        dashSpeed = dashDistance / dashDuration; // Пересчитываем для актуальных значений
-        dashDirection = worldDirection.normalized;
-        dashDirection.y = 0; // Горизонтальный дэш
-        dashDirection.Normalize();
+        dashSpeed = dashDistance / dashDuration;
+        
+        // Безопасная нормализация направления (защита от нулевого вектора)
+        dashDirection = worldDirection;
+        dashDirection.y = 0;
+        if (dashDirection.sqrMagnitude < 0.001f)
+            dashDirection = transform.forward;
+        else
+            dashDirection.Normalize();
         
         // Обнуляем вертикальную скорость для резкости
-        Velocity.y = 0;
+        SetVerticalVelocity(0f);
         
         OnDashStarted?.Invoke();
         
@@ -314,14 +423,11 @@ public class PlayerMotor : MonoBehaviour
         
         dashTimer -= Time.deltaTime;
         
-        // Применяем движение дэша
         Vector3 dashVelocity = dashDirection * dashSpeed;
         controller.Move(dashVelocity * Time.deltaTime);
         
-        // Держим вертикальную скорость на нуле во время дэша
-        Velocity.y = 0;
+        SetVerticalVelocity(0f);
         
-        // Дэш завершён
         if (dashTimer <= 0)
         {
             EndDash();
@@ -338,9 +444,7 @@ public class PlayerMotor : MonoBehaviour
         isDashing = false;
         dashTimer = 0;
         
-        // Сохраняем импульс от дэша
-        Velocity.x = dashDirection.x * dashSpeed * dashMomentumPreserve;
-        Velocity.z = dashDirection.z * dashSpeed * dashMomentumPreserve;
+        SetHorizontalVelocity(dashDirection, dashSpeed * dashMomentumPreserve);
         
         OnDashEnded?.Invoke();
     }
@@ -380,11 +484,11 @@ public class PlayerMotor : MonoBehaviour
     
     private bool CheckGrounded()
     {
-        bool raycastGrounded = CheckGroundedByRaycast();
-        
+        // Ранний выход: если летим вверх — точно не на земле
         if (Velocity.y > 0.5f)
             return false;
         
+        bool raycastGrounded = CheckGroundedByRaycast();
         bool controllerGrounded = controller.isGrounded;
         
         if (controllerGrounded || raycastGrounded)
@@ -405,14 +509,50 @@ public class PlayerMotor : MonoBehaviour
     {
         float radius = controller.radius * 0.9f;
         float checkDistance = groundCheckDistance + controller.skinWidth;
-        Vector3 origin = transform.position + Vector3.up * (radius + 0.1f);
+        Vector3 sphereOrigin = transform.position + Vector3.up * (radius + 0.1f);
         
-        // SphereCastAll чтобы пропустить свои коллайдеры
-        var hits = Physics.SphereCastAll(origin, radius, Vector3.down, checkDistance, groundMask, QueryTriggerInteraction.Ignore);
+        // === Шаг 1: SphereCast — широкая проверка наличия земли ===
+        bool sphereFoundGround = false;
         
-        foreach (var hit in hits)
+        int hitCount = Physics.SphereCastNonAlloc(
+            sphereOrigin, radius, Vector3.down, sphereHitBuffer,
+            checkDistance, groundMask, QueryTriggerInteraction.Ignore
+        );
+        
+        for (int i = 0; i < hitCount; i++)
         {
-            // Пропускаем себя
+            ref var hit = ref sphereHitBuffer[i];
+            
+            if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
+                continue;
+            if (hit.collider == controller)
+                continue;
+            
+            sphereFoundGround = true;
+            break;
+        }
+        
+        if (!sphereFoundGround)
+        {
+            cachedGroundNormal = Vector3.up;
+            cachedGroundAngle = 0f;
+            return false;
+        }
+        
+        // === Шаг 2: Raycast — точная нормаль поверхности ===
+        // SphereCast.hit.normal возвращает нормаль контактной точки на сфере,
+        // а не нормаль поверхности. Raycast даёт точную нормаль.
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.15f;
+        
+        int rayCount = Physics.RaycastNonAlloc(
+            rayOrigin, Vector3.down, rayHitBuffer,
+            checkDistance + 0.2f, groundMask, QueryTriggerInteraction.Ignore
+        );
+        
+        for (int i = 0; i < rayCount; i++)
+        {
+            ref var hit = ref rayHitBuffer[i];
+            
             if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
                 continue;
             if (hit.collider == controller)
@@ -433,55 +573,60 @@ public class PlayerMotor : MonoBehaviour
             return cachedGroundAngle <= maxSlopeAngle;
         }
         
-        // Fallback на простой Raycast
-        var rayHits = Physics.RaycastAll(transform.position + Vector3.up * 0.15f, Vector3.down, checkDistance + 0.2f, groundMask, QueryTriggerInteraction.Ignore);
-        
-        foreach (var hit in rayHits)
-        {
-            if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
-                continue;
-            if (hit.collider == controller)
-                continue;
-            
-            cachedGroundAngle = Vector3.Angle(Vector3.up, hit.normal);
-            
-            if (cachedGroundAngle < 2f)
-            {
-                cachedGroundNormal = Vector3.up;
-                cachedGroundAngle = 0f;
-            }
-            else
-            {
-                cachedGroundNormal = hit.normal;
-            }
-            
-            return cachedGroundAngle <= maxSlopeAngle;
-        }
-        
+        // SphereCast нашёл землю, но Raycast промахнулся
+        // (например, стоим на краю). Считаем grounded с дефолтной нормалью.
         cachedGroundNormal = Vector3.up;
         cachedGroundAngle = 0f;
-        
-        return false;
+        return true;
     }
     
+    /// <summary>
+    /// Гарантирует, что точные данные о поверхности актуальны для текущего кадра.
+    /// Вызывается лениво из свойств GroundAngle / GroundNormal.
+    /// </summary>
+    private void EnsurePreciseGroundInfo()
+    {
+        if (Time.frameCount != lastGroundInfoFrame)
+        {
+            GetGroundInfo(out _, out _);
+        }
+    }
+    
+    /// <summary>
+    /// Возвращает точную информацию о поверхности под игроком.
+    /// Всегда делает прямой Raycast (не SphereCast) для точных нормалей склона.
+    /// Результат кэшируется отдельно от IsGrounded.
+    /// </summary>
     public bool GetGroundInfo(out Vector3 normal, out float angle)
     {
-        normal = cachedGroundNormal;
-        angle = cachedGroundAngle;
+        // Отдельный покадровый кэш для GetGroundInfo, независимый от IsGrounded.
+        // SphereCast (из CheckGroundedByRaycast) даёт неточные нормали на склонах,
+        // поэтому здесь всегда используется прямой Raycast.
+        if (Time.frameCount == lastGroundInfoFrame)
+        {
+            normal = cachedPreciseNormal;
+            angle = cachedPreciseAngle;
+            return cachedGroundInfoResult;
+        }
         
-        // Raycast от позиции игрока вниз
+        lastGroundInfoFrame = Time.frameCount;
+        
+        normal = Vector3.up;
+        angle = 0f;
+        
         Vector3 origin = transform.position + Vector3.up * 0.15f;
         
-        // Используем RaycastAll чтобы пропустить свои коллайдеры
-        var hits = Physics.RaycastAll(origin, Vector3.down, 5f, groundMask, QueryTriggerInteraction.Ignore);
+        int hitCount = Physics.RaycastNonAlloc(
+            origin, Vector3.down, rayHitBuffer,
+            5f, groundMask, QueryTriggerInteraction.Ignore
+        );
         
-        foreach (var hit in hits)
+        for (int i = 0; i < hitCount; i++)
         {
-            // Пропускаем себя и своих детей
+            ref var hit = ref rayHitBuffer[i];
+            
             if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
                 continue;
-            
-            // Пропускаем CharacterController
             if (hit.collider == controller)
                 continue;
             
@@ -497,11 +642,20 @@ public class PlayerMotor : MonoBehaviour
                 normal = hit.normal;
             }
             
+            // Обновляем основной кэш тоже — он используется в ApplyGravity, ProjectOnGround и дебаге
             cachedGroundNormal = normal;
             cachedGroundAngle = angle;
+            
+            // Точный кэш для GetGroundInfo
+            cachedPreciseNormal = normal;
+            cachedPreciseAngle = angle;
+            cachedGroundInfoResult = true;
             return true;
         }
         
+        cachedPreciseNormal = Vector3.up;
+        cachedPreciseAngle = 0f;
+        cachedGroundInfoResult = false;
         return false;
     }
     
@@ -511,11 +665,13 @@ public class PlayerMotor : MonoBehaviour
     
     public void Move(Vector3 direction, float speed, float acceleration)
     {
-        var cameraForward = CameraObject.transform.forward;
+        if (cameraObject == null) return;
+        
+        var cameraForward = cameraObject.transform.forward;
         cameraForward.y = 0;
         cameraForward.Normalize();
         
-        var cameraRight = CameraObject.transform.right;
+        var cameraRight = cameraObject.transform.right;
         cameraRight.y = 0;
         cameraRight.Normalize();
         
@@ -525,14 +681,18 @@ public class PlayerMotor : MonoBehaviour
         var targetVelocity = targetDirection * speed;
         var newVelocity = Vector3.MoveTowards(currentHorizontal, targetVelocity, acceleration * Time.deltaTime);
         
-        Velocity.x = newVelocity.x;
-        Velocity.z = newVelocity.z;
+        var vel = Velocity;
+        vel.x = newVelocity.x;
+        vel.z = newVelocity.z;
+        Velocity = vel;
     }
 
     public void AirMove(Vector3 direction, float airSpeed, float airAcceleration)
     {
-        var cameraForward = CameraObject.transform.forward;
-        var cameraRight = CameraObject.transform.right;
+        if (cameraObject == null) return;
+        
+        var cameraForward = cameraObject.transform.forward;
+        var cameraRight = cameraObject.transform.right;
 
         cameraForward.y = 0;
         cameraRight.y = 0;
@@ -557,8 +717,10 @@ public class PlayerMotor : MonoBehaviour
             airAcceleration * Time.deltaTime
         );
 
-        Velocity.x = newVelocity.x;
-        Velocity.z = newVelocity.z;
+        var vel = Velocity;
+        vel.x = newVelocity.x;
+        vel.z = newVelocity.z;
+        Velocity = vel;
     }
 
     public void SlideMove(Vector3 input, float speed, float acceleration, 
@@ -575,8 +737,10 @@ public class PlayerMotor : MonoBehaviour
             if (input.magnitude > 0.1f)
             {
                 Vector3 wishDir = GetWorldInputDirection(input);
-                Velocity.x = wishDir.x * speed * 0.5f;
-                Velocity.z = wishDir.z * speed * 0.5f;
+                var vel = Velocity;
+                vel.x = wishDir.x * speed * 0.5f;
+                vel.z = wishDir.z * speed * 0.5f;
+                Velocity = vel;
             }
             return;
         }
@@ -591,7 +755,7 @@ public class PlayerMotor : MonoBehaviour
             Vector3 right = Vector3.Cross(Vector3.up, currentDirection);
             float steerInput = Vector3.Dot(wishDir, right);
             
-            float speedFactor = Mathf.Clamp01(speed / currentSpeed);
+            float speedFactor = Mathf.Clamp01(speed / Mathf.Max(currentSpeed, 0.01f));
             float steerAmount = steerInput * steerStrength * speedFactor * Time.deltaTime;
             
             float maxSteerThisFrame = maxSteerAngle * Time.deltaTime;
@@ -644,8 +808,10 @@ public class PlayerMotor : MonoBehaviour
         
         currentSpeed = Mathf.Max(currentSpeed, 0f);
         
-        Velocity.x = currentDirection.x * currentSpeed;
-        Velocity.z = currentDirection.z * currentSpeed;
+        var slideVel = Velocity;
+        slideVel.x = currentDirection.x * currentSpeed;
+        slideVel.z = currentDirection.z * currentSpeed;
+        Velocity = slideVel;
     }
     
     #endregion
@@ -654,10 +820,11 @@ public class PlayerMotor : MonoBehaviour
     
     public void ApplyGravity()
     {
-        // Во время дэша гравитация не применяется
         if (isDashing) return;
         
-        if (IsGrounded && Velocity.y < 0)
+        var vel = Velocity;
+        
+        if (IsGrounded && vel.y < 0)
         {
             float stickForce = groundStickForce;
             
@@ -675,25 +842,24 @@ public class PlayerMotor : MonoBehaviour
             float speedFactor = Mathf.Clamp01(Speed / 20f);
             stickForce *= (1f + speedFactor);
             
-            Velocity.y = -stickForce;
+            vel.y = -stickForce;
         }
         else
         {
-            Velocity.y -= gravity * Time.deltaTime;
+            vel.y -= gravity * Time.deltaTime;
         }
+        
+        Velocity = vel;
     }
     
     public void ApplyMovement()
     {
-        // Во время дэша движение управляется через UpdateDash
         if (isDashing) return;
         
         Vector3 motion = Velocity * Time.deltaTime;
         
         if (IsGrounded && Velocity.y <= 0)
         {
-            CheckGroundedByRaycast();
-            
             motion = ProjectOnGround(motion);
             SnapToGround();
         }
@@ -732,25 +898,44 @@ public class PlayerMotor : MonoBehaviour
         
         Vector3 origin = transform.position + Vector3.up * 0.1f;
         
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, snapToGroundDistance, groundMask))
+        // Используем NonAlloc + фильтрация себя
+        int hitCount = Physics.RaycastNonAlloc(
+            origin, Vector3.down, rayHitBuffer,
+            snapToGroundDistance, groundMask
+        );
+        
+        for (int i = 0; i < hitCount; i++)
         {
+            ref var hit = ref rayHitBuffer[i];
+            
+            // Фильтруем себя
+            if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
+                continue;
+            if (hit.collider == controller)
+                continue;
+            
             float angle = Vector3.Angle(Vector3.up, hit.normal);
             if (angle > maxSlopeAngle)
-                return;
+                continue;
             
             float distanceToGround = hit.distance - 0.1f;
             if (distanceToGround > 0.01f && distanceToGround < snapToGroundDistance)
             {
                 controller.Move(Vector3.down * distanceToGround);
+                return;
             }
         }
     }
     
     public void Jump(float force)
     {
-        Velocity.y = force;
+        SetVerticalVelocity(force);
         lastGroundedTime = -1f;
         lastTrueGroundedTime = -1f;
+        
+        // Инвалидируем кэши, чтобы следующий вызов не вернул устаревший результат
+        lastGroundCheckFrame = -1;
+        lastGroundInfoFrame = -1;
     }
     
     #endregion
@@ -780,13 +965,11 @@ public class PlayerMotor : MonoBehaviour
         
         wantsToCrouch = false;
         
-        // Проверяем, можно ли встать
         if (CanStandUp())
         {
             IsCrouching = false;
             targetHeight = originalHeight;
         }
-        // Если нельзя — остаёмся в приседе, попробуем в следующем кадре
     }
     
     /// <summary>
@@ -802,7 +985,6 @@ public class PlayerMotor : MonoBehaviour
         controller.height = originalHeight;
         controller.center = originalCenter;
         
-        // Восстанавливаем позицию меша
         if (meshRoot != null)
         {
             meshRoot.localPosition = new Vector3(
@@ -815,23 +997,16 @@ public class PlayerMotor : MonoBehaviour
     
     private void UpdateCrouchTransition()
     {
-        // Если хотим встать, но не можем — продолжаем пытаться
         if (!wantsToCrouch && IsCrouching && CanStandUp())
         {
             IsCrouching = false;
             targetHeight = originalHeight;
         }
         
-        // Плавный переход высоты
         if (Mathf.Abs(currentHeight - targetHeight) > 0.001f)
         {
-            float previousHeight = currentHeight;
             currentHeight = Mathf.MoveTowards(currentHeight, targetHeight, crouchTransitionSpeed * Time.deltaTime);
-            
             ApplyHeight(currentHeight);
-            
-            // Компенсируем изменение высоты, чтобы ноги оставались на месте
-            // (CharacterController.center меняется, но transform.position — нет)
         }
     }
     
@@ -839,8 +1014,6 @@ public class PlayerMotor : MonoBehaviour
     {
         controller.height = height;
         
-        // Центр смещается пропорционально изменению высоты
-        // При приседании центр опускается вниз
         float heightDiff = originalHeight - height;
         controller.center = new Vector3(
             originalCenter.x,
@@ -848,7 +1021,6 @@ public class PlayerMotor : MonoBehaviour
             originalCenter.z
         );
         
-        // Смещаем меш вниз при приседании
         if (meshRoot != null)
         {
             float targetY = originalMeshY - heightDiff / 2f;
@@ -859,15 +1031,14 @@ public class PlayerMotor : MonoBehaviour
             );
         }
         
-        // Двигаем камеру вместе с высотой
-        if (CameraObject != null && CameraObject.transform.parent == transform)
+        if (cameraObject != null && cameraObject.transform.parent == transform)
         {
             float heightRatio = height / originalHeight;
             float newCameraY = originalCameraY * heightRatio;
-            CameraObject.transform.localPosition = new Vector3(
-                CameraObject.transform.localPosition.x,
+            cameraObject.transform.localPosition = new Vector3(
+                cameraObject.transform.localPosition.x,
                 newCameraY,
-                CameraObject.transform.localPosition.z
+                cameraObject.transform.localPosition.z
             );
         }
     }
@@ -884,36 +1055,31 @@ public class PlayerMotor : MonoBehaviour
         
         float checkRadius = controller.radius * 0.8f;
         
-        // Проверяем от верха текущего коллайдера
-        // center.y - это смещение центра от transform.position
-        // верх коллайдера = transform.position + center + (height/2) * up
         Vector3 currentTop = transform.position + controller.center + Vector3.up * (currentHeight / 2f);
         Vector3 targetTop = transform.position + originalCenter + Vector3.up * (originalHeight / 2f);
         
-        // Используем OverlapCapsule чтобы проверить всё пространство между текущей и целевой высотой
-        // Нижняя точка капсулы = текущий верх, верхняя = целевой верх
         Vector3 point1 = currentTop + Vector3.up * checkRadius;
         Vector3 point2 = targetTop - Vector3.up * checkRadius;
         
-        // Проверяем на все слои кроме игрока (слой 6)
-        int layerMask = ~(1 << 6);
+        // Динамическая маска: исключаем свой слой вместо хардкода
+        int layerMask = ~(1 << gameObject.layer);
         
-        Collider[] colliders = Physics.OverlapCapsule(
+        int overlapCount = Physics.OverlapCapsuleNonAlloc(
             point1,
             point2,
             checkRadius,
+            overlapBuffer,
             layerMask,
             QueryTriggerInteraction.Ignore
         );
         
-        // Фильтруем свои коллайдеры
-        foreach (var col in colliders)
+        for (int i = 0; i < overlapCount; i++)
         {
+            var col = overlapBuffer[i];
             if (col.transform == transform) continue;
             if (col.transform.IsChildOf(transform)) continue;
             if (col == controller) continue;
             
-            // Нашли препятствие
             return false;
         }
         
@@ -939,6 +1105,8 @@ public class PlayerMotor : MonoBehaviour
     
     public Vector3 GetInputDirection(Vector2 input)
     {
+        if (cameraObject == null) return Vector3.forward;
+        
         Vector3 inputDirection = new Vector3(input.x, 0, input.y);
         
         if (inputDirection.magnitude < 0.1f)
@@ -946,11 +1114,11 @@ public class PlayerMotor : MonoBehaviour
         
         inputDirection.Normalize();
         
-        var cameraForward = CameraObject.transform.forward;
+        var cameraForward = cameraObject.transform.forward;
         cameraForward.y = 0;
         cameraForward.Normalize();
     
-        var cameraRight = CameraObject.transform.right;
+        var cameraRight = cameraObject.transform.right;
         cameraRight.y = 0;
         cameraRight.Normalize();
     
@@ -980,8 +1148,10 @@ public class PlayerMotor : MonoBehaviour
     
     private Vector3 GetWorldInputDirection(Vector3 input)
     {
-        Vector3 cameraForward = CameraObject.transform.forward;
-        Vector3 cameraRight = CameraObject.transform.right;
+        if (cameraObject == null) return Vector3.forward;
+        
+        Vector3 cameraForward = cameraObject.transform.forward;
+        Vector3 cameraRight = cameraObject.transform.right;
         
         cameraForward.y = 0;
         cameraRight.y = 0;
@@ -1048,18 +1218,18 @@ public class PlayerMotor : MonoBehaviour
             transform.rotation = teleportRotation.Value;
     
         if (!teleportPreserveVelocity)
-            Velocity = Vector3.zero;
+            ResetVelocity();
     
         controller.enabled = true;
     
         lastGroundedTime = -1f;
         lastTrueGroundedTime = -1f;
+        lastGroundCheckFrame = -1;
+        lastGroundInfoFrame = -1;
         wasGroundedLastFrame = false;
         
-        // Сбрасываем приседание при телепорте
         ForceResetHeight();
         
-        // Отменяем дэш при телепорте
         if (isDashing)
             CancelDash();
     
@@ -1067,5 +1237,4 @@ public class PlayerMotor : MonoBehaviour
     }
 
     #endregion
-    
 }
