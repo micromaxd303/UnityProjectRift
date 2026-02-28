@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1f81c9f5a302b749bc4d6736b11d4d1, type: 3}
   m_Name: RuinsBranch
   m_EditorClassIdentifier: 
-  isEnable: 0
-  name: 
-  description: 
-  levelCount: 5
-  sceneName: RuinsScene
-  mission: []
+  data:
+    isEnable: 1
+    name: "\u0420\u0443\u0438\u043D\u044B \u0414\u0440\u0435\u0432\u043D\u0438\u0445"
+    description: 
+    levelCount: 5
+    sceneName: RuinsScene
+    mission: []

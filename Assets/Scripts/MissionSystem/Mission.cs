@@ -3,8 +3,13 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Mission", menuName = "Scriptable Objects/Mission")]
 public class Mission : ScriptableObject
 {
+    MissionData missionData;
+}
+
+public class MissionData
+{
     [Tooltip("Название миссии")]
-    public new string name;
+    public string name;
 
     [Tooltip("Описание миссии")]
     public string description;

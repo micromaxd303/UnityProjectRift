@@ -1,6 +1,7 @@
 using JetBrains.Annotations;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class GameManager : MonoBehaviour
 {
@@ -11,10 +12,17 @@ public class GameManager : MonoBehaviour
     public string BaseSceneName;
 
     public ISaveLoadSystem SaveLoadSystem;
-    private const string SavePath = "TEMP Save/Sectors";
+    private const string SavePath = @"Saves\";
+
+    public UnityEvent LoadBaseEvent;
+    public UnityEvent<Level> LoadLevelEvent;
+    public UnityEvent<Level> CompleteLevelEvent;
+    public UnityEvent<Sector> CompleteSectorEvent;
 
     [HideInInspector]
     public SaveData saveData;
+
+    private List<BranchData> branchDatas;
 
 
     public List<Sector> GetSectors 
@@ -47,6 +55,10 @@ public class GameManager : MonoBehaviour
             return level;
         }
     }
+    public List<BranchData> GetBranches
+    {
+        get { return branchDatas; }
+    }
 
     // singletone
     private static GameManager instance;
@@ -62,27 +74,30 @@ public class GameManager : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
         SaveLoadSystem = new SaveLoadSystem();
+
+        branchDatas = new();
+        foreach (Branch branch in Branches) branchDatas.Add(branch.data);
     }
 
     public void NewGame()
     {
         saveData.sectors = new List<Sector>();
-        saveData.sectors.Add(new Sector(Branches, 0));
+        saveData.sectors.Add(new Sector(GetBranches, 0));
     }
-    public void LoadGame()
+    public void LoadGame(string SaveName = "Default")
     {
         if (SaveLoadSystem != null)
         {
-            if (SaveLoadSystem.Load<SaveData>(SavePath, out saveData))
-                Debug.Log("Игра успешно загружена");
+            if (SaveLoadSystem.Load<SaveData>(SavePath + SaveName, out saveData))
+                Debug.Log($"Сохранение {SaveName} успешно загружено");
         }
     }
-    public void SaveGame()
+    public void SaveGame(string SaveName = "Default")
     {
         if (SaveLoadSystem != null)
         {
-            SaveLoadSystem.Save<SaveData>(saveData, SavePath);
-            Debug.Log("Игра успешно сохранена");
+            SaveLoadSystem.Save<SaveData>(saveData, SavePath + SaveName);
+            Debug.Log($"Игра успешно сохранена: {SaveName}");
         }
     }
 
@@ -93,30 +108,28 @@ public class GameManager : MonoBehaviour
         {
             level.status = Level.Status.Running;
             SceneManager.Instance.LoadScene(level);
+            LoadLevelEvent.Invoke(level);
         } 
     }
 
     public void LoadBase()
     {
-        for (int i = 0; i < Branches.Count; i++)
-        {
-            if (GetCurrentSector.FindLevel(new Vector2Int(i, GetCurrentSector.currentLevel)).status == Level.Status.Complete)
-            {
-                Level Base = new(BaseSceneName);
-                SceneManager.Instance.LoadScene(Base);
-                break;
-            }
-        }
-        Debug.Log("Перемещение на базу невозможно, на текущем уровне сектора нет ни одного завершенного уровня");
+        if (GetCurrentSector.currentLevel != 0 || GetCurrentSector.FindLevel(Level.Status.Running) != null) { Debug.Log("Перемещение на базу невозможно, сектор не завершен"); return; }
+        Level Base = new(BaseSceneName);
+        SceneManager.Instance.LoadScene(Base);
+        LoadBaseEvent.Invoke();
     }
 
     public void CompleteLevel(Level level)
     {
         if (GetCurrentSector == null) return;
         GetCurrentSector.CompleteLevel(level);
+        CompleteLevelEvent.Invoke(level);
         if (GetCurrentSector.levelBoss.status == Level.Status.Complete)
         {
-            GetSectors.Add(new Sector(Branches, Mathf.Clamp(GetSectors.Count - 1, 0, int.MaxValue)));
+            Sector lastSector = GetCurrentSector;
+            GetSectors.Add(new Sector(GetBranches, Mathf.Clamp(GetSectors.Count, 0, int.MaxValue)));
+            CompleteSectorEvent.Invoke(lastSector);
         }
     }
 }
@@ -127,7 +140,7 @@ public class Level
     public Vector2Int index;                        // Индекс уровня в секторе
     public Status status = Status.NotAvailable;     // Статус уровня
 
-    public List<Mission> missions;                  // Список всех миссий на уровне
+    public List<MissionData> missions;              // Список всех миссий на уровне
 
     public string sceneName;
 
@@ -142,15 +155,15 @@ public class Level
 [System.Serializable]
 public class Sector
 {
-    public List<Branch> branches;   // Список веток для сектора, используется для правильной генерации сектора
-    public List<Level> levels;      // Список всех уровней
-    public Level levelBoss;         // Уровень босса
-    public int index;               // Индекс сектора
+    public List<BranchData> branches;   // Список веток для сектора, используется для правильной генерации сектора
+    public List<Level> levels;          // Список всех уровней
+    public Level levelBoss;             // Уровень босса
+    public int index;                   // Индекс сектора
 
-    public int currentLevel = 0;    // Текущий уровень сектора
-    public int maxLevel;            // Максимальный уровень сектора
+    public int currentLevel = 0;        // Текущий уровень сектора
+    public int maxLevel;                // Максимальный уровень сектора
 
-    public Sector(List<Branch> branches, int index)
+    public Sector(List<BranchData> branches, int index)
     {
         this.index = index;
         this.branches = branches;
@@ -196,7 +209,7 @@ public class Sector
         return null;
     }
 
-    public Branch GetBranch(Level level)
+    public BranchData GetBranch(Level level)
     {
         if (level.index.x >= 0 && level.index.x < branches.Count) return branches[level.index.x];
         else return null;

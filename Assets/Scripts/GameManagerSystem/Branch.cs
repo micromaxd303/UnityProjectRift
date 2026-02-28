@@ -4,11 +4,17 @@ using System.Collections.Generic;
 [CreateAssetMenu(fileName = "Branch", menuName = "Scriptable Objects/Branch")]
 public class Branch : ScriptableObject
 {
+    public BranchData data;
+}
+
+[System.Serializable]
+public class BranchData
+{
     [Tooltip("Активна ли ветка")]
     public bool isEnable = false;
 
     [Tooltip("Название ветки")]
-    public new string name;
+    public string name;
 
     [Tooltip("Описание ветик")]
     public string description;
