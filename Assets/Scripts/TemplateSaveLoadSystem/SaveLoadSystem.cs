@@ -1,10 +1,18 @@
 using System;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using UnityEngine;
+using Newtonsoft.Json;
 
 public class SaveLoadSystem : ISaveLoadSystem
 {
+
+    private static readonly JsonSerializerSettings Settings = new()
+    {
+        TypeNameHandling = TypeNameHandling.Auto,
+        Formatting = Formatting.Indented,
+        Converters = { new Vector2IntConverter() }
+    };
+    
     public void Save<T>(T file, string fileName)
     {
         if (file == null)
@@ -14,16 +22,13 @@ public class SaveLoadSystem : ISaveLoadSystem
             throw new ArgumentNullException(nameof(fileName));
         
         string path = Path.Combine(Defaults.SavePath, fileName);
-
-        if (!Directory.Exists(Path.GetDirectoryName(path)))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-        }
         
-        BinaryFormatter formatter = new BinaryFormatter();
-        using FileStream stream = new FileStream(path, FileMode.Create);
+        string dir = Path.GetDirectoryName(path);
+        if(!Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
         
-        formatter.Serialize(stream, file);
+        string json = JsonConvert.SerializeObject(file, Settings);
+        File.WriteAllText(path, json);
     }
 
     public bool Load<T>(string fileName, out T result)
@@ -37,10 +42,8 @@ public class SaveLoadSystem : ISaveLoadSystem
         }
         try
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            result = (T)formatter.Deserialize(stream);
-            
+            string json = File.ReadAllText(path);
+            result = JsonConvert.DeserializeObject<T>(json, Settings);
             return true;
         }
         catch (Exception e)
