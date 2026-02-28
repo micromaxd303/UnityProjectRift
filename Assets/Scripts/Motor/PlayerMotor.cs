@@ -1027,11 +1027,6 @@ public class PlayerMotor : MonoBehaviour
         controller.height = height;
         
         float heightDiff = originalHeight - height;
-        controller.center = new Vector3(
-            originalCenter.x,
-            originalCenter.y - heightDiff / 2f,
-            originalCenter.z
-        );
         
         if (meshRoot != null)
         {
@@ -1040,17 +1035,6 @@ public class PlayerMotor : MonoBehaviour
                 meshRoot.localPosition.x,
                 targetY,
                 meshRoot.localPosition.z
-            );
-        }
-        
-        if (cameraObject != null && cameraObject.transform.parent == transform)
-        {
-            float heightRatio = height / originalHeight;
-            float newCameraY = originalCameraY * heightRatio;
-            cameraObject.transform.localPosition = new Vector3(
-                cameraObject.transform.localPosition.x,
-                newCameraY,
-                cameraObject.transform.localPosition.z
             );
         }
     }
