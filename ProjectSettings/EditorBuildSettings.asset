@@ -8,6 +8,24 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scripts/UI TEMP/da.unity
+    guid: 91af98a137f347b4f9a97ae7831fec20
+  - enabled: 1
+    path: Assets/Scenes/AlphaScene.unity
+    guid: 4e73f436983affc4ea53f426db57ab73
+  - enabled: 1
+    path: Assets/Scenes/IncubatorScene.unity
+    guid: 1e9be6a50881dd0499c192afade2dd1d
+  - enabled: 1
+    path: Assets/Scenes/InfectionScene.unity
+    guid: 13fdcdfacd2473c40b0aaaa267d1e11b
+  - enabled: 1
+    path: Assets/Scenes/MechanyxScene.unity
+    guid: 34bb4b7060bdfe845956f6d51cbb3016
+  - enabled: 1
+    path: Assets/Scenes/RuinsScene.unity
+    guid: fb6d9fb7814134f44ba783549a2700b3
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
