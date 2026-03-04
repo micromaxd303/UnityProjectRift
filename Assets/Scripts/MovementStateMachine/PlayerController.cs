@@ -19,7 +19,7 @@ public class PlayerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         
-        DontDestroyOnLoad(this);
+        DontDestroyOnLoad(this.gameObject.transform.parent.gameObject);
         
         stateMachine.Initialize(input, motor);
         
@@ -35,11 +35,4 @@ public class PlayerController : MonoBehaviour
         stateMachine.SetStartingState(MovementType.Idle);
     }
 
-    public void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.J))
-        {
-            motor.Teleport(new Vector3(0,10,0), true);
-        }
-    }
 }

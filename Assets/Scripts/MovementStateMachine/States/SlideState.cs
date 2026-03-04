@@ -42,7 +42,7 @@ public class SlidingState : MovementState
         var cfg = SM.Config;
         
         // Упал с платформы
-        if (!SM.Motor.IsGrounded && SM.Motor.TimeSinceGrounded > 0.2f)
+        if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
         // Прыжок из слайда

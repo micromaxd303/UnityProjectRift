@@ -16,7 +16,7 @@ public class CrouchState : MovementState
     
     public override MovementType? CheckTransitions()
     {
-        if (!SM.Motor.IsGrounded && SM.Motor.TimeSinceGrounded > 0.4f)
+        if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
         if (SM.Input.DashPressed)

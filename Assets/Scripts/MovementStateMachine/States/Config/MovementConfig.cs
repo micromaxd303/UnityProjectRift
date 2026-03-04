@@ -3,6 +3,20 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "MovementConfig", menuName = "Scriptable Objects/MovementConfig")]
 public class MovementConfig : ScriptableObject
 {
+    [Header("General Physics")]
+    public float Gravity = 20f;
+    public float GroundStickForce = 5f;
+    
+    [Header("Ground Detection")]
+    public float GroundCheckDistance = 0.3f;
+    public float MaxSlopeAngle = 45f;
+    public float SnapToGroundDistance = 0.5f;
+    public float GroundedGraceTime = 0.1f;
+    public LayerMask groundMask = ~0;
+    
+    [Header("Coyote Time")]
+    public float CoyoteTimeDuration = 0.15f;
+    
     [Header("Walking")]
     public float WalkSpeed = 10f;
     public float WalkAcceleration = 50f;
@@ -14,6 +28,8 @@ public class MovementConfig : ScriptableObject
     [Header("Crouching")]
     public float CrouchSpeed = 5f;
     public float CrouchAcceleration = 70f;
+    public float CrouchHeightMultiplier = 0.5f;
+    public float CrouchTransitionSpeed = 10f;
     
     [Header("Idle")]
     public float IdleDeceleration = 100f;
@@ -44,4 +60,12 @@ public class MovementConfig : ScriptableObject
     public float EntryBoostMultiplier = 1.15f;
     public float EntryBoostThreshold = 8f;
     public float MaxBoostedSpeed = 25f;
+    
+    [Header("Dash")]
+    public int MaxDashCharges = 2;
+    public float DashChargeRegenTime = 2f;
+    public float DashDistance = 8f;
+    public float DashDuration = 0.1f;
+    public float DashCooldownBetweenUses = 0.1f;
+    public float DashMomentumPreserve = 0.3f;
 }

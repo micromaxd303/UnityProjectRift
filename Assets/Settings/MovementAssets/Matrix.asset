@@ -115,7 +115,7 @@ MonoBehaviour:
     condition: 1
   - from: 3
     to: 5
-    type: 0
+    type: 1
     condition: 0
   - from: 3
     to: 6
@@ -155,19 +155,19 @@ MonoBehaviour:
     condition: 0
   - from: 5
     to: 0
-    type: 0
+    type: 1
     condition: 0
   - from: 5
     to: 1
-    type: 0
+    type: 1
     condition: 0
   - from: 5
     to: 2
-    type: 0
+    type: 1
     condition: 0
   - from: 5
     to: 3
-    type: 0
+    type: 1
     condition: 0
   - from: 5
     to: 4
@@ -237,4 +237,3 @@ MonoBehaviour:
     to: 6
     type: 1
     condition: 0
-  speedThreshold: 5

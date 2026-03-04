@@ -12,14 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d20902d573ddff54fbe45a70e45c8ad9, type: 3}
   m_Name: MovementConfig
   m_EditorClassIdentifier: 
+  Gravity: 25
+  GroundStickForce: 5
+  GroundCheckDistance: 0.2
+  MaxSlopeAngle: 45
+  SnapToGroundDistance: 0.5
+  GroundedGraceTime: 0.2
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 19
+  CoyoteTimeDuration: 0.2
   WalkSpeed: 10
   WalkAcceleration: 50
   SprintSpeed: 16
   SprintAcceleration: 80
   CrouchSpeed: 5
   CrouchAcceleration: 70
+  CrouchHeightMultiplier: 0.5
+  CrouchTransitionSpeed: 10
   IdleDeceleration: 100
-  AirSpeed: 15
+  AirSpeed: 12
   AirAcceleration: 70
   BaseJumpForce: 10
   MinJumpTime: 0.1
@@ -28,9 +40,15 @@ MonoBehaviour:
   SlideJumpMinSpeed: 6
   MaxSlideJumpSpeed: 20
   SlideJumpAirControlMultiplier: 0
-  BaseSlideSpeed: 15
+  BaseSlideSpeed: 14
   SlideAcceleration: 50
-  MinSlideSpeed: 7
-  EntryBoostMultiplier: 1.15
-  EntryBoostThreshold: 8
-  MaxBoostedSpeed: 20
+  MinSlideSpeed: 12
+  EntryBoostMultiplier: 1.05
+  EntryBoostThreshold: 4
+  MaxBoostedSpeed: 16
+  MaxDashCharges: 10
+  DashChargeRegenTime: 2
+  DashDistance: 8
+  DashDuration: 0.1
+  DashCooldownBetweenUses: 0.1
+  DashMomentumPreserve: 0.3
