@@ -1265,6 +1265,7 @@ public class PlayerMotor : MonoBehaviour
     
         transform.position = teleportTarget;
         
+        
 
         if (!teleportPreserveVelocity)
             ResetVelocity();
