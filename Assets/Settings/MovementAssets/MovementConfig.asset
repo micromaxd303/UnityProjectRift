@@ -35,8 +35,8 @@ MonoBehaviour:
   AirAcceleration: 70
   BaseJumpForce: 10
   MinJumpTime: 0.1
-  SlideJumpForceBonus: 2
-  SlideJumpSpeedBoost: 1.2
+  SlideJumpForceBonus: 3
+  SlideJumpSpeedBoost: 1.3
   SlideJumpMinSpeed: 6
   MaxSlideJumpSpeed: 20
   SlideJumpAirControlMultiplier: 0
@@ -46,7 +46,7 @@ MonoBehaviour:
   EntryBoostMultiplier: 1.05
   EntryBoostThreshold: 4
   MaxBoostedSpeed: 16
-  MaxDashCharges: 10
+  MaxDashCharges: 0
   DashChargeRegenTime: 2
   DashDistance: 8
   DashDuration: 0.1

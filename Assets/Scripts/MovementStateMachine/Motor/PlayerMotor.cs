@@ -199,11 +199,18 @@ public class PlayerMotor : MonoBehaviour
     /// Вызывается CharacterController при столкновении во время Move().
     /// Используем для точного определения стен — нормаль почти горизонтальна (normal.y мал).
     /// Склоны и полы имеют normal.y > 0.3, поэтому не попадают сюда.
+    /// Столкновения ниже stepOffset игнорируются — это ступеньки,
+    /// которые CharacterController перешагивает автоматически.
     /// </summary>
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         if (hit.normal.y > -0.3f && hit.normal.y < 0.3f)
         {
+            // Ступеньки: точка контакта ниже stepOffset от основания капсулы — пропускаем
+            float hitHeight = hit.point.y - transform.position.y;
+            if (hitHeight < controller.stepOffset)
+                return;
+            
             hitWallThisFrame = true;
             lastWallNormal = hit.normal;
         }
