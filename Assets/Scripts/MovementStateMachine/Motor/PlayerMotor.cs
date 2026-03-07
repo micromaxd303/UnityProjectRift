@@ -275,7 +275,7 @@ public class PlayerMotor : MonoBehaviour
     /// </summary>
     public void SetMaxDashCharges(int newMax)
     {
-        if (newMax < 1) newMax = 1;
+        //if (newMax < 1) newMax = 1;
         
         int oldMax = config.MaxDashCharges;
         config.MaxDashCharges = newMax;
