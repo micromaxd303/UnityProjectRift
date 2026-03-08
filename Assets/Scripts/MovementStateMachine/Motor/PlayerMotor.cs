@@ -56,7 +56,9 @@ public class PlayerMotor : MonoBehaviour
     
     // Dash state
     private int currentDashCharges;
+    private int runtimeMaxDashCharges;
     private float[] chargeRegenTimers;
+    private float[] chargeRegenProgressBuffer;
     private float lastDashTime;
     private bool isDashing;
     private float dashTimer;
@@ -87,7 +89,7 @@ public class PlayerMotor : MonoBehaviour
     public bool IsFullyCrouched => IsCrouching && Mathf.Abs(currentHeight - targetHeight) < 0.01f;
     public bool CanJump => Time.time - lastGroundedTime < config.CoyoteTimeDuration;
     public float TimeSinceGrounded => Time.time - lastGroundedTime;
-    public float Speed => new Vector3(Velocity.x, 0, Velocity.z).magnitude;
+    public float Speed => Mathf.Sqrt(Velocity.x * Velocity.x + Velocity.z * Velocity.z);
     public float GroundAngle
     {
         get
@@ -123,7 +125,7 @@ public class PlayerMotor : MonoBehaviour
     
     // Dash properties
     public int CurrentDashCharges => currentDashCharges;
-    public int MaxDashCharges => config.MaxDashCharges;
+    public int MaxDashCharges => runtimeMaxDashCharges;
     public bool IsDashing => isDashing;
     public float DashProgress => isDashing ? 1f - (dashTimer / config.DashDuration) : 0f;
     public bool CanDash => currentDashCharges > 0 && Time.time - lastDashTime >= config.DashCooldownBetweenUses && !isDashing;
@@ -135,18 +137,10 @@ public class PlayerMotor : MonoBehaviour
     {
         get
         {
-            if (currentDashCharges >= config.MaxDashCharges) return 1f;
+            if (runtimeMaxDashCharges == 0) return 0f;
+            if (currentDashCharges >= runtimeMaxDashCharges) return 1f;
             
-            float maxProgress = 0f;
-            for (int i = 0; i < config.MaxDashCharges - currentDashCharges; i++)
-            {
-                if (i < chargeRegenTimers.Length)
-                {
-                    float progress = chargeRegenTimers[i] / config.DashChargeRegenTime;
-                    if (progress > maxProgress) maxProgress = progress;
-                }
-            }
-            return maxProgress;
+            return chargeRegenTimers[0] / config.DashChargeRegenTime;
         }
     }
     
@@ -162,7 +156,8 @@ public class PlayerMotor : MonoBehaviour
         if (CameraObject == null)
         {
             Debug.LogError("[PlayerMotor] CameraObject не назначен!", this);
-            
+            enabled = false;
+            return;
         }
         
         PanTilt = CameraObject.GetComponent<CinemachinePanTilt>();
@@ -202,13 +197,16 @@ public class PlayerMotor : MonoBehaviour
     /// Столкновения ниже stepOffset игнорируются — это ступеньки,
     /// которые CharacterController перешагивает автоматически.
     /// </summary>
+    /// <param name="hit">Коллайдеры с которыми произошло столкновение</param>
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        if (hit.normal.y > -0.3f && hit.normal.y < 0.3f)
+        if (Mathf.Abs(hit.normal.y) < 0.5f)
         {
-            // Ступеньки: точка контакта ниже stepOffset от основания капсулы — пропускаем
+            float effectiveStepOffset = controller.stepOffset 
+                * (controller.height / originalHeight);
+            
             float hitHeight = hit.point.y - transform.position.y;
-            if (hitHeight < controller.stepOffset)
+            if (hitHeight < effectiveStepOffset)
                 return;
             
             hitWallThisFrame = true;
@@ -222,6 +220,8 @@ public class PlayerMotor : MonoBehaviour
     /// Устанавливает горизонтальную скорость в заданном направлении.
     /// Направление нормализуется и проецируется на горизонталь автоматически.
     /// </summary>
+    /// <param name="direction">Направление движения (y - будет обнулен)</param>
+    /// <param name="speed">Скорость</param>
     public void SetHorizontalVelocity(Vector3 direction, float speed)
     {
         direction.y = 0;
@@ -235,27 +235,13 @@ public class PlayerMotor : MonoBehaviour
     }
     
     /// <summary>
-    /// Добавляет горизонтальный импульс в заданном направлении.
-    /// </summary>
-    public void AddHorizontalImpulse(Vector3 direction, float force)
-    {
-        direction.y = 0;
-        if (direction.sqrMagnitude < 0.001f) return;
-        direction.Normalize();
-        
-        var vel = Velocity;
-        vel.x += direction.x * force;
-        vel.z += direction.z * force;
-        Velocity = vel;
-    }
-    
-    /// <summary>
     /// Устанавливает вертикальную составляющую скорости.
     /// </summary>
-    public void SetVerticalVelocity(float y)
+    /// <param name="speed">Скорость</param>
+    public void SetVerticalVelocity(float speed)
     {
         var vel = Velocity;
-        vel.y = y;
+        vel.y = speed;
         Velocity = vel;
     }
     
@@ -273,22 +259,26 @@ public class PlayerMotor : MonoBehaviour
     
     private void InitializeDashSystem()
     {
-        currentDashCharges = config.MaxDashCharges;
-        chargeRegenTimers = new float[config.MaxDashCharges];
+        runtimeMaxDashCharges = config.MaxDashCharges;
+        currentDashCharges = runtimeMaxDashCharges;
+        chargeRegenTimers = new float[runtimeMaxDashCharges];
+        chargeRegenProgressBuffer = new float[runtimeMaxDashCharges];
     }
     
     /// <summary>
     /// Изменяет максимальное количество зарядов дэша
     /// </summary>
+    /// <param name="newMax">Количество зарядов уклонения</param>
     public void SetMaxDashCharges(int newMax)
     {
-        //if (newMax < 1) newMax = 1;
+        if (newMax < 0) newMax = 0;
         
-        int oldMax = config.MaxDashCharges;
-        config.MaxDashCharges = newMax;
+        int oldMax = runtimeMaxDashCharges;
+        runtimeMaxDashCharges = newMax;
         
         float[] oldTimers = chargeRegenTimers;
         chargeRegenTimers = new float[newMax];
+        chargeRegenProgressBuffer = new float[newMax];
         
         for (int i = 0; i < Mathf.Min(oldTimers.Length, newMax); i++)
         {
@@ -304,7 +294,7 @@ public class PlayerMotor : MonoBehaviour
             currentDashCharges = newMax;
         }
         
-        OnDashChargesChanged?.Invoke(currentDashCharges, config.MaxDashCharges);
+        OnDashChargesChanged?.Invoke(currentDashCharges, runtimeMaxDashCharges);
     }
     
     /// <summary>
@@ -314,7 +304,7 @@ public class PlayerMotor : MonoBehaviour
     public void AddDashCharges(int amount)
     {
         int oldCharges = currentDashCharges;
-        currentDashCharges = Mathf.Min(currentDashCharges + amount, config.MaxDashCharges);
+        currentDashCharges = Mathf.Min(currentDashCharges + amount, runtimeMaxDashCharges);
         
         if (currentDashCharges != oldCharges)
         {
@@ -324,7 +314,7 @@ public class PlayerMotor : MonoBehaviour
                 chargeRegenTimers[i] = 0f;
             }
             
-            OnDashChargesChanged?.Invoke(currentDashCharges, config.MaxDashCharges);
+            OnDashChargesChanged?.Invoke(currentDashCharges, runtimeMaxDashCharges);
         }
     }
     
@@ -333,21 +323,22 @@ public class PlayerMotor : MonoBehaviour
     /// </summary>
     public void RefillDashCharges()
     {
-        currentDashCharges = config.MaxDashCharges;
+        currentDashCharges = runtimeMaxDashCharges;
         for (int i = 0; i < chargeRegenTimers.Length; i++)
         {
             chargeRegenTimers[i] = 0f;
         }
-        OnDashChargesChanged?.Invoke(currentDashCharges, config.MaxDashCharges);
+        OnDashChargesChanged?.Invoke(currentDashCharges, runtimeMaxDashCharges);
     }
     
     private void UpdateDashChargeRegen()
     {
-        if (currentDashCharges >= config.MaxDashCharges) return;
+        if (runtimeMaxDashCharges == 0) return;
+        if (currentDashCharges >= runtimeMaxDashCharges) return;
         
         chargeRegenTimers[0] += Time.deltaTime;
         
-        while (currentDashCharges < config.MaxDashCharges && chargeRegenTimers[0] >= config.DashChargeRegenTime)
+        while (currentDashCharges < runtimeMaxDashCharges && chargeRegenTimers[0] >= config.DashChargeRegenTime)
         {
             currentDashCharges++;
             
@@ -357,13 +348,15 @@ public class PlayerMotor : MonoBehaviour
             }
             chargeRegenTimers[chargeRegenTimers.Length - 1] = 0f;
             
-            OnDashChargesChanged?.Invoke(currentDashCharges, config.MaxDashCharges);
+            OnDashChargesChanged?.Invoke(currentDashCharges, runtimeMaxDashCharges);
         }
     }
     
     /// <summary>
-    /// Начинает дэш в указанном направлении. Возвращает true если дэш начался.
+    /// Конвертирует InputDirection в WorldDirection и начинает дэш
     /// </summary>
+    /// <param name="inputDirection">Направление дэша</param>
+    /// <returns>True - если дэш начался. False - если нет</returns>
     public bool StartDash(Vector2 inputDirection)
     {
         if (!CanDash) return false;
@@ -382,30 +375,30 @@ public class PlayerMotor : MonoBehaviour
     }
     
     /// <summary>
-    /// Начинает дэш в указанном мировом направлении
+    /// Начинает дэш в мировом направлении
     /// </summary>
-    public bool StartDash(Vector3 worldDirection)
+    /// <param name="worldDirection"></param>
+    /// <returns>True - если дэш начался. False - если нет</returns>
+    private bool StartDash(Vector3 worldDirection)
     {
         if (!CanDash) return false;
         
         currentDashCharges--;
         lastDashTime = Time.time;
         
-        int activeTimers = config.MaxDashCharges - currentDashCharges;
+        int activeTimers = runtimeMaxDashCharges - currentDashCharges;
         int newTimerSlot = activeTimers - 1;
         if (newTimerSlot >= 0 && newTimerSlot < chargeRegenTimers.Length)
         {
             chargeRegenTimers[newTimerSlot] = 0f;
         }
         
-        OnDashChargesChanged?.Invoke(currentDashCharges, config.MaxDashCharges);
-        
-        // Начинаем дэш
+        OnDashChargesChanged?.Invoke(currentDashCharges, runtimeMaxDashCharges);
+
         isDashing = true;
         dashTimer = config.DashDuration;
         dashSpeed = config.DashDistance / config.DashDuration;
         
-        // Безопасная нормализация направления (защита от нулевого вектора)
         dashDirection = worldDirection;
         dashDirection.y = 0;
         if (dashDirection.sqrMagnitude < 0.001f)
@@ -413,7 +406,6 @@ public class PlayerMotor : MonoBehaviour
         else
             dashDirection.Normalize();
         
-        // Обнуляем вертикальную скорость для резкости
         SetVerticalVelocity(0f);
         
         OnDashStarted?.Invoke();
@@ -470,28 +462,33 @@ public class PlayerMotor : MonoBehaviour
     }
     
     /// <summary>
-    /// Возвращает информацию о восстановлении всех зарядов
+    /// Возвращает информацию о восстановлении всех зарядов.
+    /// Внимание: regenProgress — внутренний буфер, не сохраняйте ссылку.
     /// </summary>
-    public (int current, int max, float[] regenProgress) GetDashChargeInfo()
+    public (int current, int max, float[] regenProgress, int regenCount) GetDashChargeInfo()
     {
-        int regenCount = config.MaxDashCharges - currentDashCharges;
-        float[] progress = new float[regenCount];
+        int regenCount = runtimeMaxDashCharges - currentDashCharges;
         
         for (int i = 0; i < regenCount; i++)
         {
-            progress[i] = chargeRegenTimers[i] / config.DashChargeRegenTime;
+            chargeRegenProgressBuffer[i] = chargeRegenTimers[i] / config.DashChargeRegenTime;
         }
         
-        return (currentDashCharges, config.MaxDashCharges, progress);
+        return (currentDashCharges, runtimeMaxDashCharges, chargeRegenProgressBuffer, regenCount);
     }
     
     #endregion
     
     #region Ground Detection
     
+    /// <summary>
+    /// Проверяет наличие земли двумя способами.
+    /// SphereCast - для точного определения земли.
+    /// Raycast - для точного определения нормали.
+    /// </summary>
+    /// <returns>True - если на земле. False - если нет</returns>
     private bool CheckGrounded()
     {
-        // Ранний выход: если летим вверх — точно не на земле
         if (Velocity.y > 0.5f)
             return false;
         
@@ -543,12 +540,16 @@ public class PlayerMotor : MonoBehaviour
         {
             cachedGroundNormal = Vector3.up;
             cachedGroundAngle = 0f;
+            // НЕ обновляем lastGroundInfoFrame — пусть GetGroundInfo
+            // сделает свой независимый Raycast с большей дальностью
             return false;
         }
         
         // === Шаг 2: Raycast — точная нормаль поверхности ===
         // SphereCast.hit.normal возвращает нормаль контактной точки на сфере,
         // а не нормаль поверхности. Raycast даёт точную нормаль.
+        // Заодно обновляем precise-кэш, чтобы GroundAngle/GroundNormal
+        // не делали повторный Raycast в этом кадре.
         Vector3 rayOrigin = transform.position + Vector3.up * 0.15f;
         
         int rayCount = Physics.RaycastNonAlloc(
@@ -577,11 +578,15 @@ public class PlayerMotor : MonoBehaviour
                 cachedGroundNormal = hit.normal;
             }
             
+            // Обновляем precise-кэш тем же результатом
+            cachedPreciseNormal = cachedGroundNormal;
+            cachedPreciseAngle = cachedGroundAngle;
+            cachedGroundInfoResult = true;
+            lastGroundInfoFrame = Time.frameCount;
+            
             return cachedGroundAngle <= config.MaxSlopeAngle;
         }
         
-        // SphereCast нашёл землю, но Raycast промахнулся
-        // (например, стоим на краю). Считаем grounded с дефолтной нормалью.
         cachedGroundNormal = Vector3.up;
         cachedGroundAngle = 0f;
         return true;
@@ -601,8 +606,10 @@ public class PlayerMotor : MonoBehaviour
     
     /// <summary>
     /// Возвращает точную информацию о поверхности под игроком.
-    /// Берёт ближайшее попадание.
     /// </summary>
+    /// <param name="normal">Нормаль поверхности</param>
+    /// <param name="angle">Угол поверхности</param>
+    /// <returns></returns>
     public bool GetGroundInfo(out Vector3 normal, out float angle)
     {
         if (Time.frameCount == lastGroundInfoFrame)
@@ -632,7 +639,6 @@ public class PlayerMotor : MonoBehaviour
         {
             ref var hit = ref rayHitBuffer[i];
             
-            // Пропускаем себя
             if (hit.collider.transform.IsChildOf(transform) || hit.collider.transform == transform)
                 continue;
             if (hit.collider == controller)
@@ -687,17 +693,15 @@ public class PlayerMotor : MonoBehaviour
     
     #region Movement
     
+    /// <summary>
+    /// Конвертирует направление инпута с учетом направления камеры в мировой вектор и задает Velocity для движения по земле.
+    /// </summary>
+    /// <param name="direction">Направление инпута клавиатуры</param>
+    /// <param name="speed">Скорость</param>
+    /// <param name="acceleration">Ускорение</param>
     public void Move(Vector3 direction, float speed, float acceleration)
     {
-        if (CameraObject == null) return;
-        
-        var cameraForward = CameraObject.transform.forward;
-        cameraForward.y = 0;
-        cameraForward.Normalize();
-        
-        var cameraRight = CameraObject.transform.right;
-        cameraRight.y = 0;
-        cameraRight.Normalize();
+        if (!GetCameraAxes(out var cameraForward, out var cameraRight)) return;
         
         var targetDirection = cameraForward * direction.z + cameraRight * direction.x;
         
@@ -711,17 +715,15 @@ public class PlayerMotor : MonoBehaviour
         Velocity = vel;
     }
 
+    /// <summary>
+    /// Конвертирует направление инпута с учетом направления камеры в мировой вектор и задает Velocity для движения в воздухе.
+    /// </summary>
+    /// <param name="direction">Направление инпута</param>
+    /// <param name="airSpeed">Скорость в воздухе</param>
+    /// <param name="airAcceleration">Ускорение в воздухе</param>
     public void AirMove(Vector3 direction, float airSpeed, float airAcceleration)
     {
-        if (CameraObject == null) return;
-        
-        var cameraForward = CameraObject.transform.forward;
-        var cameraRight = CameraObject.transform.right;
-
-        cameraForward.y = 0;
-        cameraRight.y = 0;
-        cameraForward.Normalize();
-        cameraRight.Normalize();
+        if (!GetCameraAxes(out var cameraForward, out var cameraRight)) return;
 
         var currentHorizontal = new Vector3(Velocity.x, 0, Velocity.z);
     
@@ -747,6 +749,17 @@ public class PlayerMotor : MonoBehaviour
         Velocity = vel;
     }
 
+    /// <summary>
+    /// Конвертирует направление инпута с учетом направления камеры в мировой вектор и задает Velocity для слайда.
+    /// </summary>
+    /// <param name="input">Направление инпута</param>
+    /// <param name="speed">Скорость</param>
+    /// <param name="acceleration">Ускорение</param>
+    /// <param name="slopeAccelMultiplier">Ускорение при движении вниз по склону</param>
+    /// <param name="frictionMultiplier">Сила трения</param>
+    /// <param name="maxSpeedMultiplier">Максимальная скорость в слайде</param>
+    /// <param name="steerStrength">Скорость замедления при слайде в гору</param>
+    /// <param name="maxSteerAngle">Максимальная угол слайда</param>
     public void SlideMove(Vector3 input, float speed, float acceleration, 
         float slopeAccelMultiplier = 2f, float frictionMultiplier = 0.5f, float maxSpeedMultiplier = 1.5f,
         float steerStrength = 2f, float maxSteerAngle = 45f)
@@ -842,6 +855,9 @@ public class PlayerMotor : MonoBehaviour
     
     #region Gravity & Physics
     
+    /// <summary>
+    /// Применяет постоянную гравитацию
+    /// </summary>
     public void ApplyGravity()
     {
         if (isDashing) return;
@@ -858,11 +874,6 @@ public class PlayerMotor : MonoBehaviour
                 stickForce *= (1f + slopeFactor * 2f);
             }
             
-            if (IsCrouching)
-            {
-                stickForce *= 3f;
-            }
-            
             float speedFactor = Mathf.Clamp01(Speed / 20f);
             stickForce *= (1f + speedFactor);
             
@@ -876,6 +887,9 @@ public class PlayerMotor : MonoBehaviour
         Velocity = vel;
     }
     
+    /// <summary>
+    /// Применяет Velocity 
+    /// </summary>
     public void ApplyMovement()
     {
         if (isDashing) return;
@@ -891,6 +905,7 @@ public class PlayerMotor : MonoBehaviour
         // Сбрасываем флаг перед Move — OnControllerColliderHit установит его при столкновении
         hitWallThisFrame = false;
         
+        Vector3 posBeforeMove = transform.position;
         CollisionFlags flags = controller.Move(motion);
         
         var vel = Velocity;
@@ -902,12 +917,49 @@ public class PlayerMotor : MonoBehaviour
         }
         
         // Стены: проецируем скорость на плоскость стены.
-        // OnControllerColliderHit отфильтровал только реальные стены (normal.y < 0.3),
-        // склоны и полы сюда не попадают.
-        if (hitWallThisFrame)
+        // Приоритет источника нормали:
+        //   1) OnControllerColliderHit - точная нормаль, но может не сработать
+        //      на тонких стенах или при контакте ниже stepOffset.
+        //   2) Рейкаст в направлении движения - надёжен для любой толщины стены.
+        //   3) Оценка по разнице позиций - последний резерв.
+        bool sideCollision = (flags & CollisionFlags.Sides) != 0;
+        
+        if (sideCollision || hitWallThisFrame)
         {
             Vector3 horizVel = new Vector3(vel.x, 0, vel.z);
-            Vector3 wallNormalH = new Vector3(lastWallNormal.x, 0, lastWallNormal.z);
+            Vector3 wallNormalH = Vector3.zero;
+            
+            // 1) Точная нормаль от OnControllerColliderHit
+            if (hitWallThisFrame)
+            {
+                wallNormalH = new Vector3(lastWallNormal.x, 0, lastWallNormal.z);
+            }
+            
+            // 2) Рейкаст в направлении движения
+            if (wallNormalH.sqrMagnitude < 0.001f && horizVel.sqrMagnitude > 0.001f)
+            {
+                Vector3 moveDir = horizVel.normalized;
+                Vector3 castOrigin = transform.position + controller.center;
+                float castDist = controller.radius + controller.skinWidth + 0.15f;
+                
+                if (Physics.Raycast(castOrigin, moveDir, out RaycastHit wallHit,
+                    castDist, config.groundMask, QueryTriggerInteraction.Ignore))
+                {
+                    if (Mathf.Abs(wallHit.normal.y) < 0.3f)
+                        wallNormalH = new Vector3(wallHit.normal.x, 0, wallHit.normal.z);
+                }
+            }
+            
+            // 3) Оценка по заблокированной части движения
+            if (wallNormalH.sqrMagnitude < 0.001f && sideCollision)
+            {
+                Vector3 actualMotion = transform.position - posBeforeMove;
+                Vector3 blockedH = new Vector3(
+                    motion.x - actualMotion.x, 0, motion.z - actualMotion.z);
+                
+                if (blockedH.sqrMagnitude > 0.0001f)
+                    wallNormalH = blockedH;  // направление ≈ нормаль стены
+            }
             
             if (wallNormalH.sqrMagnitude > 0.001f)
             {
@@ -927,6 +979,11 @@ public class PlayerMotor : MonoBehaviour
         wasGroundedLastFrame = IsGrounded;
     }
     
+    /// <summary>
+    /// Проецирует вектор движения на землю. Используется для одинаковой скорости на склонах и ровных поверхностях.
+    /// </summary>
+    /// <param name="motion">Направление движения</param>
+    /// <returns></returns>
     private Vector3 ProjectOnGround(Vector3 motion)
     {
         if (cachedGroundAngle < 0.1f)
@@ -941,11 +998,13 @@ public class PlayerMotor : MonoBehaviour
             projected = projected.normalized * originalMagnitude;
         }
         
-        projected.y -= config.GroundStickForce * Time.deltaTime;
-        
         return projected;
     }
     
+    
+    /// <summary>
+    /// Привязка игрока к земле. Используется для плавного приседаия.
+    /// </summary>
     private void SnapToGround()
     {
         if (Velocity.y > 0.1f)
@@ -959,7 +1018,7 @@ public class PlayerMotor : MonoBehaviour
         // Используем NonAlloc + фильтрация себя
         int hitCount = Physics.RaycastNonAlloc(
             origin, Vector3.down, rayHitBuffer,
-            config.SnapToGroundDistance, config.groundMask
+            config.SnapToGroundDistance, config.groundMask, QueryTriggerInteraction.Ignore
         );
         
         for (int i = 0; i < hitCount; i++)
@@ -985,6 +1044,10 @@ public class PlayerMotor : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Прыжок
+    /// </summary>
+    /// <param name="force">Сила прыжка</param>
     public void Jump(float force)
     {
         SetVerticalVelocity(force);
@@ -1074,9 +1137,13 @@ public class PlayerMotor : MonoBehaviour
         
         float heightDiff = originalHeight - height;
         
+        // Сдвигаем центр капсулы вниз, чтобы она уменьшалась сверху,
+        // а ноги оставались на земле
+        controller.center = originalCenter - Vector3.up * (heightDiff / 2f);
+        
         if (meshRoot != null)
         {
-            float targetY = originalMeshY - heightDiff / 2f;
+            float targetY = originalMeshY - heightDiff;
             meshRoot.localPosition = new Vector3(
                 meshRoot.localPosition.x,
                 targetY,
@@ -1150,6 +1217,31 @@ public class PlayerMotor : MonoBehaviour
     
     #region Utility
     
+    /// <summary>
+    /// Возвращает горизонтальные оси камеры (forward и right с обнулённым Y).
+    /// </summary>
+    private bool GetCameraAxes(out Vector3 forward, out Vector3 right)
+    {
+        if (CameraObject == null)
+        {
+            forward = Vector3.forward;
+            right = Vector3.right;
+            return false;
+        }
+        
+        forward = CameraObject.transform.forward;
+        right = CameraObject.transform.right;
+        forward.y = 0;
+        right.y = 0;
+        forward.Normalize();
+        right.Normalize();
+        return true;
+    }
+    
+    /// <summary>
+    /// Возвращает направление движения
+    /// </summary>
+    /// <returns>Вектор3 с обнуленным Y</returns>
     public Vector3 GetMoveDirection()
     {
         return new Vector3(Velocity.x, 0, Velocity.z).normalized;
@@ -1157,8 +1249,6 @@ public class PlayerMotor : MonoBehaviour
     
     public Vector3 GetInputDirection(Vector2 input)
     {
-        if (CameraObject == null) return Vector3.forward;
-        
         Vector3 inputDirection = new Vector3(input.x, 0, input.y);
         
         if (inputDirection.magnitude < 0.1f)
@@ -1166,19 +1256,17 @@ public class PlayerMotor : MonoBehaviour
         
         inputDirection.Normalize();
         
-        var cameraForward = CameraObject.transform.forward;
-        cameraForward.y = 0;
-        cameraForward.Normalize();
-    
-        var cameraRight = CameraObject.transform.right;
-        cameraRight.y = 0;
-        cameraRight.Normalize();
+        if (!GetCameraAxes(out var cameraForward, out var cameraRight))
+            return Vector3.forward;
     
         return (cameraForward * inputDirection.z + cameraRight * inputDirection.x).normalized;
     }
     
     public bool CanStartSlide()
     {
+        if (!IsGrounded)
+            return false;
+        
         if (!GetGroundInfo(out Vector3 normal, out float angle))
             return false;
         
@@ -1200,15 +1288,8 @@ public class PlayerMotor : MonoBehaviour
     
     private Vector3 GetWorldInputDirection(Vector3 input)
     {
-        if (CameraObject == null) return Vector3.forward;
-        
-        Vector3 cameraForward = CameraObject.transform.forward;
-        Vector3 cameraRight = CameraObject.transform.right;
-        
-        cameraForward.y = 0;
-        cameraRight.y = 0;
-        cameraForward.Normalize();
-        cameraRight.Normalize();
+        if (!GetCameraAxes(out var cameraForward, out var cameraRight))
+            return Vector3.forward;
         
         return (cameraForward * input.z + cameraRight * input.x).normalized;
     }
@@ -1248,12 +1329,12 @@ public class PlayerMotor : MonoBehaviour
     }
     /// <summary>
     /// 
-    /// BUG: Не работает...
+    /// BUG: Не работает... сделал приватным для скрытия.
     /// 
     /// </summary>
     /// <param name="position"></param>
     /// <param name="rotation"></param>
-    public void Teleport(Vector3 position, Vector2 rotation)
+    private void Teleport(Vector3 position, Vector2 rotation)
     {
         isTeleporting = true;
         teleportTarget = position;

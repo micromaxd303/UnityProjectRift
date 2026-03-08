@@ -29,6 +29,6 @@ public class Rotate : MonoBehaviour
             Mathf.PerlinNoise(t + noiseOffsetZ, 0f) - 0.5f
         ).normalized;
 
-        transform.Rotate(axis * rotateSpeed * Time.deltaTime);
+        transform.Rotate(axis * (rotateSpeed * Time.deltaTime));
     }
 }

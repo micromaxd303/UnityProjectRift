@@ -14,7 +14,6 @@ public class SlidingState : MovementState
         SM.Context.ExitedFromSlide = false;
         SM.Context.SlideBoostCapSpeed = entrySpeed;
         
-        // Буст при входе с разбега
         if (entrySpeed >= cfg.EntryBoostThreshold)
         {
             float boostedSpeed = Mathf.Min(entrySpeed * cfg.EntryBoostMultiplier, cfg.MaxBoostedSpeed);
@@ -41,11 +40,9 @@ public class SlidingState : MovementState
     {
         var cfg = SM.Config;
         
-        // Упал с платформы
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
-        // Прыжок из слайда
         if (SM.Input.JumpPressed && SM.Motor.CanJump)
         {
             if (!SM.Motor.CanStandUp())
@@ -53,12 +50,10 @@ public class SlidingState : MovementState
             
             return MovementType.Jumping;
         }
-        
-        // Dash
+
         if (SM.Input.DashPressed)
             return MovementType.Dashing;
-        
-        // Слайд закончился — скорость упала
+
         if (SM.Motor.Speed < cfg.MinSlideSpeed)
         {
             if (SM.Input.CrouchHeld)
@@ -72,7 +67,6 @@ public class SlidingState : MovementState
                 : MovementType.Idle;
         }
         
-        // Отпустили crouch — выходим из слайда
         if (!SM.Input.CrouchHeld)
         {
             if (!SM.Motor.CanStandUp())

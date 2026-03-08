@@ -1,6 +1,4 @@
-using System;
 using UnityEngine;
-
 public class PlayerController : MonoBehaviour
 {
     private InputManager input;
@@ -15,11 +13,10 @@ public class PlayerController : MonoBehaviour
     }
     private void Start()
     {
-        
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
         
-        DontDestroyOnLoad(this.gameObject.transform.parent.gameObject);
+        DontDestroyOnLoad(transform.parent.gameObject);
         
         stateMachine.Initialize(input, motor);
         

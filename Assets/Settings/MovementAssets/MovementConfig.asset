@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Gravity: 25
   GroundStickForce: 5
-  GroundCheckDistance: 0.2
+  GroundCheckDistance: 1.2
   MaxSlopeAngle: 45
   SnapToGroundDistance: 0.5
-  GroundedGraceTime: 0.2
+  GroundedGraceTime: 0.1
   groundMask:
     serializedVersion: 2
     m_Bits: 19
-  CoyoteTimeDuration: 0.2
+  CoyoteTimeDuration: 0.1
   WalkSpeed: 10
   WalkAcceleration: 50
   SprintSpeed: 16
@@ -41,12 +41,12 @@ MonoBehaviour:
   MaxSlideJumpSpeed: 20
   SlideJumpAirControlMultiplier: 0
   BaseSlideSpeed: 14
-  SlideAcceleration: 50
+  SlideAcceleration: 40
   MinSlideSpeed: 12
   EntryBoostMultiplier: 1.05
   EntryBoostThreshold: 4
   MaxBoostedSpeed: 16
-  MaxDashCharges: 0
+  MaxDashCharges: 6
   DashChargeRegenTime: 2
   DashDistance: 8
   DashDuration: 0.1

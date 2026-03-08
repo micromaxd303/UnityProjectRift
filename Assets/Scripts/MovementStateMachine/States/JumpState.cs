@@ -47,10 +47,8 @@ public class JumpingState : MovementState
         if (timer > 0)
             return null;
         
-        // Приземление (актуально при быстром возврате после столкновения с потолком)
         if (SM.Motor.IsGrounded)
         {
-            // Нет места встать в полный рост — уходим в присед
             if (!SM.Motor.CanStandUp())
                 return MovementType.Crouching;
             
@@ -59,9 +57,6 @@ public class JumpingState : MovementState
             return MovementType.Idle;
         }
         
-        // В воздухе — всегда переходим в AirControl.
-        // MinJumpTime уже защищает от слишком раннего перехода,
-        // дополнительный буфер TimeSinceGrounded создавал мёртвую зону на краях.
         return MovementType.AirControl;
     }
     

@@ -11,7 +11,6 @@ public class DashingState : MovementState
     
     public override void Exit()
     {
-        // Убеждаемся что дэш завершён при выходе из состояния
         if (SM.Motor.IsDashing)
         {
             SM.Motor.EndDash();
@@ -20,11 +19,8 @@ public class DashingState : MovementState
     
     public override MovementType? CheckTransitions()
     {
-        // Дэш ещё идёт
         if (SM.Motor.IsDashing)
             return null;
-        
-        // Дэш закончился — определяем куда переходить
         
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
@@ -44,7 +40,6 @@ public class DashingState : MovementState
 
     public override void Update()
     {
-        // Обновляем дэш через Motor
         SM.Motor.UpdateDash();
     }
 }
