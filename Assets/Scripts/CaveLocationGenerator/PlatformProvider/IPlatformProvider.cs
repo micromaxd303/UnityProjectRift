@@ -6,7 +6,6 @@ public interface IPlatformProvider
     RuntimePlatform GetPlatform();
     GraphicsDeviceType GetGraphicsAPI();
     bool SupportsComputeShader();
-    
     bool SupportsJobSystem();
-    bool IsGraphicsAPISupported(MarchingCubesConfig.GraphicsAPIType apiType);
+    MarchingCubesConfig.GraphicsAPIType GetCurrentGraphicsAPIType();
 }

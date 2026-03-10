@@ -16,12 +16,11 @@ public class MarchingCubesConfig : ScriptableObject
     
     [field: SerializeField] public GraphicsAPIType PreferredGraphicsAPI { get; private set; } = GraphicsAPIType.Auto;
 
+    [field: SerializeField] public int RecommendationThreshold { get; private set; } = 65;
     public int TotalChunkVoxels => ChunkSize.x * ChunkSize.y * ChunkSize.z;
-
-    public int RecommendationThreshold = 16348;
     
     public enum BackendType { Auto, ComputeShader, JobSystem, }
-    public enum GraphicsAPIType { Auto, DX11, DX12, Vulkan }
+    public enum GraphicsAPIType { Auto, DX11, DX12, Vulkan, Metal }
 
     private void OnValidate()
     {

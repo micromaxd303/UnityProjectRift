@@ -23,25 +23,19 @@ public class PlatformProvider : IPlatformProvider
         return true;
     }
     
-    public bool IsGraphicsAPISupported(MarchingCubesConfig.GraphicsAPIType apiType)
+    public MarchingCubesConfig.GraphicsAPIType GetCurrentGraphicsAPIType()
     {
-        return ApiChecks.TryGetValue(apiType, out var check) && check(GetGraphicsAPI(), GetPlatform());
+        if (ApiMapping.TryGetValue(GetGraphicsAPI(), out var apiType))
+            return apiType;
+
+        throw new InvalidOperationException($"Unsupported graphics API: {GetGraphicsAPI()}");
     }
 
-    private static readonly Dictionary<MarchingCubesConfig.GraphicsAPIType, Func<GraphicsDeviceType, RuntimePlatform, bool>>
-        ApiChecks = new()
-        {
-            [MarchingCubesConfig.GraphicsAPIType.DX11] = (api, p) =>
-                api == GraphicsDeviceType.Direct3D11 &&
-                p is RuntimePlatform.WindowsPlayer or  RuntimePlatform.WindowsEditor,
-            
-            [MarchingCubesConfig.GraphicsAPIType.DX12] = (api, p) =>
-                api == GraphicsDeviceType.Direct3D12 &&
-                p is RuntimePlatform.WindowsPlayer or  RuntimePlatform.WindowsEditor,
-            
-            [MarchingCubesConfig.GraphicsAPIType.Vulkan] = (api, p) =>
-                api == GraphicsDeviceType.Vulkan 
-                && p is RuntimePlatform.WindowsPlayer or RuntimePlatform.WindowsEditor 
-                    or RuntimePlatform.LinuxPlayer or RuntimePlatform.LinuxEditor,
-        };
+    private static readonly Dictionary<GraphicsDeviceType, MarchingCubesConfig.GraphicsAPIType> ApiMapping = new()
+    {
+        [GraphicsDeviceType.Direct3D11] = MarchingCubesConfig.GraphicsAPIType.DX11,
+        [GraphicsDeviceType.Direct3D12] = MarchingCubesConfig.GraphicsAPIType.DX12,
+        [GraphicsDeviceType.Vulkan] = MarchingCubesConfig.GraphicsAPIType.Vulkan,
+        [GraphicsDeviceType.Metal] = MarchingCubesConfig.GraphicsAPIType.Metal,
+    };
 }

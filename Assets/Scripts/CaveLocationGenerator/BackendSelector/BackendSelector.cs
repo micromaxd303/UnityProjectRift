@@ -1,5 +1,3 @@
-using System;
-
 public class BackendSelector
 {
     private readonly IPlatformProvider _platformProvider;
@@ -42,20 +40,9 @@ public class BackendSelector
 
     private MarchingCubesConfig.GraphicsAPIType ResolveGraphicsAPI(MarchingCubesConfig config)
     {
-        if (config.PreferredGraphicsAPI != MarchingCubesConfig.GraphicsAPIType.Auto // Проверяем сначала выбранный
-            && _platformProvider.IsGraphicsAPISupported(config.PreferredGraphicsAPI))
-            return config.PreferredGraphicsAPI;
-
-        foreach (MarchingCubesConfig.GraphicsAPIType api in Enum.GetValues(typeof(MarchingCubesConfig.GraphicsAPIType))) // Ищем первый подходящий
-        {
-            if (api == MarchingCubesConfig.GraphicsAPIType.Auto)
-                continue;
-
-            if (_platformProvider.IsGraphicsAPISupported(api))
-                return api;
-        }
-        
-        throw new InvalidOperationException("No supported graphics API found."); 
+        return config.PreferredGraphicsAPI != MarchingCubesConfig.GraphicsAPIType.Auto
+            ? config.PreferredGraphicsAPI
+            : _platformProvider.GetCurrentGraphicsAPIType();
     }
 }
 
