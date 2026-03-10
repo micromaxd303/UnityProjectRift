@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d20902d573ddff54fbe45a70e45c8ad9, type: 3}
+  m_Name: MovementConfig
+  m_EditorClassIdentifier: 
+  Gravity: 25
+  GroundStickForce: 5
+  GroundCheckDistance: 1.2
+  MaxSlopeAngle: 45
+  SnapToGroundDistance: 0.5
+  GroundedGraceTime: 0.1
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 19
+  CoyoteTimeDuration: 0.1
+  WalkSpeed: 10
+  WalkAcceleration: 50
+  SprintSpeed: 16
+  SprintAcceleration: 80
+  CrouchSpeed: 5
+  CrouchAcceleration: 70
+  CrouchHeightMultiplier: 0.5
+  CrouchTransitionSpeed: 10
+  IdleDeceleration: 100
+  AirSpeed: 12
+  AirAcceleration: 70
+  BaseJumpForce: 10
+  MinJumpTime: 0.1
+  SlideJumpForceBonus: 3
+  SlideJumpSpeedBoost: 1.3
+  SlideJumpMinSpeed: 6
+  MaxSlideJumpSpeed: 20
+  SlideJumpAirControlMultiplier: 0
+  BaseSlideSpeed: 14
+  SlideAcceleration: 40
+  MinSlideSpeed: 12
+  EntryBoostMultiplier: 1.05
+  EntryBoostThreshold: 4
+  MaxBoostedSpeed: 16
+  MaxDashCharges: 6
+  DashChargeRegenTime: 2
+  DashDistance: 8
+  DashDuration: 0.1
+  DashCooldownBetweenUses: 0.1
+  DashMomentumPreserve: 0.3
