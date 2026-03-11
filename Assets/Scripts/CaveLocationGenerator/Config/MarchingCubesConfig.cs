@@ -24,7 +24,7 @@ public class MarchingCubesConfig : ScriptableObject
 
     private void OnValidate()
     {
-        WorldSize = Vector3Int.Max(WorldSize, Vector3Int.one * 2) ;
+        WorldSize = Vector3Int.Max(WorldSize, Vector3Int.one) ;
         ChunkSize = Vector3Int.Max(ChunkSize, Vector3Int.one);
         VoxelSize = Mathf.Max(VoxelSize, 0.01f);
     }

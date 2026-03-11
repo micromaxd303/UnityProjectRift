@@ -1,0 +1,71 @@
+#pragma kernel MarchingCubes
+#include "Tables.hlsl"
+
+struct Triangle
+{
+    float3 VertexA;
+    float3 VertexB;
+    float3 VertexC;
+};
+
+StructuredBuffer<float> VoxelData;
+AppendStructuredBuffer<Triangle> Triangles;
+
+float IsoLevel;
+int3 SamplesPerAxis;
+float3 ChunkOffset;
+
+int IndexFromCoord(int3 p)
+{
+    return p.x + p.y * SamplesPerAxis.x + p.z * SamplesPerAxis.x * SamplesPerAxis.y;
+}
+
+float3 InterpolateVertex(int2 edge, int3 id, float cubeCorners[8])
+{
+    float3 p0 = float3(id + VertexOffset[edge.x]) + ChunkOffset;
+    float3 p1 = float3(id + VertexOffset[edge.y]) + ChunkOffset;
+
+    float v0 = cubeCorners[edge.x];
+    float v1 = cubeCorners[edge.y];
+
+    float denom = v1 - v0;
+    float t = abs(denom) > 0.00001 ? (IsoLevel - v0) / denom : 0.5;
+
+    return lerp(p0, p1, t);
+}
+
+[numthreads(8, 8, 8)]
+void MarchingCubes(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)(SamplesPerAxis.x - 1) ||
+        id.y >= (uint)(SamplesPerAxis.y - 1) ||
+        id.z >= (uint)(SamplesPerAxis.z - 1))
+        return;
+
+    float cubeCorners[8];
+    for (int i = 0; i < 8; i++)
+        cubeCorners[i] = VoxelData[IndexFromCoord(id + VertexOffset[i])];
+
+    int cubeIndex = 0;
+    for (int j = 0; j < 8; j++)
+    {
+        if (cubeCorners[j] < IsoLevel)
+            cubeIndex |= (1 << j);
+    }
+
+    if (cubeIndex == 0 || cubeIndex == 255)
+        return;
+
+    for (int k = 0; TriangleTable[cubeIndex * 16 + k] != -1; k += 3)
+    {
+        Triangle tri;
+        tri.VertexA = InterpolateVertex(
+            EdgeConnection[TriangleTable[cubeIndex * 16 + k]], id, cubeCorners);
+        tri.VertexB = InterpolateVertex(
+            EdgeConnection[TriangleTable[cubeIndex * 16 + k + 1]], id, cubeCorners);
+        tri.VertexC = InterpolateVertex(
+            EdgeConnection[TriangleTable[cubeIndex * 16 + k + 2]], id, cubeCorners);
+
+        Triangles.Append(tri);
+    }
+}
