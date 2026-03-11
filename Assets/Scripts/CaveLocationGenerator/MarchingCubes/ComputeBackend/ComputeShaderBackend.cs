@@ -69,6 +69,10 @@ public class ComputeShaderBackend : IMarchingCubesBackend
             Mathf.CeilToInt(_samplesPerAxis.z / 8f)
         );
 
+        // Смещение для центрирования
+        Vector3 worldSize = Vector3.Scale(_config.WorldSize, _config.ChunkSize);
+        Vector3 centerOffset = -worldSize * 0.5f;
+
         for (int x = 0; x < _config.WorldSize.x; x++)
         for (int y = 0; y < _config.WorldSize.y; y++)
         for (int z = 0; z < _config.WorldSize.z; z++)
@@ -80,7 +84,7 @@ public class ComputeShaderBackend : IMarchingCubesBackend
 
             _triangleBuffer.SetCounterValue(0);
 
-            Vector3 offset = Vector3.Scale(coord, _config.ChunkSize);
+            Vector3 offset = Vector3.Scale(coord, _config.ChunkSize) + centerOffset;
             _computeShader.SetFloats("ChunkOffset", offset.x, offset.y, offset.z);
 
             _computeShader.Dispatch(_kernel, threadGroups.x, threadGroups.y, threadGroups.z);

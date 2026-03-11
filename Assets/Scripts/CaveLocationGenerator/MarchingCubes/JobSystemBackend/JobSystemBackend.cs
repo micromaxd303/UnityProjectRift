@@ -67,6 +67,11 @@ public class JobSystemBackend : IMarchingCubesBackend
         // === Проход 2: генерация треугольников ===
         var triArrays = new NativeArray<Triangle>[chunkCount];
         var genHandles = new NativeArray<JobHandle>(chunkCount, Allocator.Temp);
+        
+        Vector3 worldSize = Vector3.Scale(
+            new Vector3(_config.WorldSize.x, _config.WorldSize.y, _config.WorldSize.z),
+            new Vector3(_config.ChunkSize.x, _config.ChunkSize.y, _config.ChunkSize.z));
+        float3 centerOffset = -(float3)(worldSize * 0.5f);
 
         for (int i = 0; i < chunkCount; i++)
         {
@@ -91,7 +96,7 @@ public class JobSystemBackend : IMarchingCubesBackend
                 ChunkOffset = new float3(
                     coord.x * _config.ChunkSize.x,
                     coord.y * _config.ChunkSize.y,
-                    coord.z * _config.ChunkSize.z),
+                    coord.z * _config.ChunkSize.z) + centerOffset,
                 IsoLevel = _config.SurfaceLevel,
                 Output = triArrays[i]
             };

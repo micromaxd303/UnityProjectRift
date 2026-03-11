@@ -3,28 +3,47 @@ using UnityEngine;
 
 public class ChunkCuller : MonoBehaviour
 {
-    [SerializeField, Range(0.1f, 1f)]
-    private float _updateInterval = 0.1f;
-
-    [SerializeField, Range(1, 8)]
-    private int _raysPerChunk = 3;
-
+    [SerializeField, Range(0.05f, 0.5f)]
+    private float _occlusionInterval = 0.2f;
+    
     [SerializeField]
     private float _maxDistance = 200f;
 
     [SerializeField, Range(1f, 20f)]
     private float _frustumBuffer = 5f;
 
+    [SerializeField]
+    private LayerMask _cullingMask = ~0;
+
     private Camera _camera;
-    private Dictionary<Vector3Int, GameObject> _chunkObjects = new();
-    private float _nextUpdate;
+    private Dictionary<Vector3Int, ChunkState> _chunks = new();
+    private float _nextOcclusionUpdate;
+
+    private struct ChunkState
+    {
+        public GameObject Go;
+        public MeshRenderer Renderer;
+        public bool OcclusionVisible;
+    }
 
     public void RegisterChunks(Dictionary<Vector3Int, GameObject> chunks)
     {
-        _chunkObjects = chunks;
+        _chunks.Clear();
 
-        foreach (var (_, go) in _chunkObjects)
-            SetChunkVisible(go, true);
+        foreach (var (coord, go) in chunks)
+        {
+            var renderer = go.GetComponent<MeshRenderer>();
+            if (renderer == null) continue;
+
+            _chunks[coord] = new ChunkState
+            {
+                Go = go,
+                Renderer = renderer,
+                OcclusionVisible = true
+            };
+
+            renderer.enabled = true;
+        }
     }
 
     private void Start()
@@ -34,54 +53,50 @@ public class ChunkCuller : MonoBehaviour
 
     private void Update()
     {
-        if (_chunkObjects.Count == 0)
+        if (_chunks.Count == 0)
             return;
 
-        UpdateFrustumCulling();
+        bool updateOcclusion = Time.time >= _nextOcclusionUpdate;
+        if (updateOcclusion)
+            _nextOcclusionUpdate = Time.time + _occlusionInterval;
 
-        if (Time.time >= _nextUpdate)
-        {
-            _nextUpdate = Time.time + _updateInterval;
-            UpdateOcclusionCulling();
-        }
-    }
-
-    private void UpdateFrustumCulling()
-    {
         Vector3 camPos = _camera.transform.position;
         var planes = GeometryUtility.CalculateFrustumPlanes(_camera);
 
         for (int i = 0; i < planes.Length; i++)
             planes[i].distance += _frustumBuffer;
 
-        foreach (var (_, go) in _chunkObjects)
+        var keys = new List<Vector3Int>(_chunks.Keys);
+
+        foreach (var coord in keys)
         {
-            if (go == null) continue;
-            var renderer = go.GetComponent<MeshRenderer>();
-            if (renderer == null) continue;
+            var state = _chunks[coord];
+            if (state.Go == null) continue;
 
-            bool inFrustum = GeometryUtility.TestPlanesAABB(planes, renderer.bounds)
-                && Vector3.Distance(camPos, renderer.bounds.center) <= _maxDistance;
+            Bounds bounds = state.Renderer.bounds;
 
-            if (!inFrustum)
-                renderer.enabled = false;
-            else if (!renderer.enabled)
-                renderer.enabled = true;
-        }
-    }
+            // 1. Расстояние
+            if (Vector3.Distance(camPos, bounds.center) > _maxDistance)
+            {
+                state.Renderer.enabled = false;
+                continue;
+            }
 
-    private void UpdateOcclusionCulling()
-    {
-        Vector3 camPos = _camera.transform.position;
+            // 2. Frustum
+            if (!GeometryUtility.TestPlanesAABB(planes, bounds))
+            {
+                state.Renderer.enabled = false;
+                continue;
+            }
 
-        foreach (var (_, go) in _chunkObjects)
-        {
-            if (go == null) continue;
-            var renderer = go.GetComponent<MeshRenderer>();
-            if (renderer == null || !renderer.enabled) continue;
+            // 3. Occlusion — обновляем по таймеру
+            if (updateOcclusion)
+            {
+                state.OcclusionVisible = IsChunkVisible(camPos, bounds, state.Go);
+                _chunks[coord] = state;
+            }
 
-            if (!IsChunkVisible(camPos, renderer.bounds, go))
-                renderer.enabled = false;
+            state.Renderer.enabled = state.OcclusionVisible;
         }
     }
 
@@ -97,7 +112,7 @@ public class ChunkCuller : MonoBehaviour
             if (dist < 0.1f)
                 return true;
 
-            if (Physics.Raycast(camPos, dir.normalized, out RaycastHit hit, dist))
+            if (Physics.Raycast(camPos, dir.normalized, out RaycastHit hit, dist, _cullingMask))
             {
                 if (hit.collider.gameObject == self)
                     return true;
@@ -116,33 +131,25 @@ public class ChunkCuller : MonoBehaviour
         Vector3 c = b.center;
         Vector3 e = b.extents;
 
-        return _raysPerChunk switch
+        return new[]
         {
-            1 => new[] { c },
-            2 => new[] { c, c + Vector3.up * e.y },
-            3 => new[] { c, c + Vector3.up * e.y, c - Vector3.up * e.y },
-            4 => new[]
-            {
-                c,
-                c + Vector3.up * e.y,
-                c + Vector3.right * e.x,
-                c + Vector3.forward * e.z
-            },
-            _ => new[]
-            {
-                c,
-                c + Vector3.up * e.y,
-                c - Vector3.up * e.y,
-                c + Vector3.right * e.x,
-                c + Vector3.forward * e.z
-            }
+            c,
+            // Грани
+            c + Vector3.up * e.y,
+            c - Vector3.up * e.y,
+            c + Vector3.right * e.x,
+            c - Vector3.right * e.x,
+            c + Vector3.forward * e.z,
+            c - Vector3.forward * e.z,
+            // Углы
+            c + new Vector3(e.x, e.y, e.z),
+            c + new Vector3(-e.x, e.y, e.z),
+            c + new Vector3(e.x, -e.y, e.z),
+            c + new Vector3(-e.x, -e.y, e.z),
+            c + new Vector3(e.x, e.y, -e.z),
+            c + new Vector3(-e.x, e.y, -e.z),
+            c + new Vector3(e.x, -e.y, -e.z),
+            c + new Vector3(-e.x, -e.y, -e.z)
         };
-    }
-
-    private void SetChunkVisible(GameObject go, bool visible)
-    {
-        var renderer = go.GetComponent<MeshRenderer>();
-        if (renderer != null && renderer.enabled != visible)
-            renderer.enabled = visible;
     }
 }

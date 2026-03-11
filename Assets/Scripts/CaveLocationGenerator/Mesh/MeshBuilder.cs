@@ -34,6 +34,8 @@ public class MeshBuilder
             mesh.RecalculateTangents();
 
             var go = new GameObject($"Chunk_{coord.x}_{coord.y}_{coord.z}");
+            go.layer = LayerMask.NameToLayer("CaveChunk");
+            
             go.transform.SetParent(_parent);
 
             go.AddComponent<MeshFilter>().mesh = mesh;
