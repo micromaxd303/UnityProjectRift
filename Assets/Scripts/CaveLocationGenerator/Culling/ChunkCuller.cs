@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class ChunkCuller : MonoBehaviour
 {
@@ -42,7 +43,7 @@ public class ChunkCuller : MonoBehaviour
                 OcclusionVisible = true
             };
 
-            renderer.enabled = true;
+            SetChunkVisible(renderer, true);
         }
     }
 
@@ -75,28 +76,39 @@ public class ChunkCuller : MonoBehaviour
 
             Bounds bounds = state.Renderer.bounds;
 
-            // 1. Расстояние
             if (Vector3.Distance(camPos, bounds.center) > _maxDistance)
             {
-                state.Renderer.enabled = false;
+                SetChunkVisible(state.Renderer, false);
                 continue;
             }
 
-            // 2. Frustum
             if (!GeometryUtility.TestPlanesAABB(planes, bounds))
             {
-                state.Renderer.enabled = false;
+                SetChunkVisible(state.Renderer, false);
                 continue;
             }
 
-            // 3. Occlusion — обновляем по таймеру
             if (updateOcclusion)
             {
                 state.OcclusionVisible = IsChunkVisible(camPos, bounds, state.Go);
                 _chunks[coord] = state;
             }
 
-            state.Renderer.enabled = state.OcclusionVisible;
+            SetChunkVisible(state.Renderer, state.OcclusionVisible);
+        }
+    }
+
+    private void SetChunkVisible(MeshRenderer renderer, bool visible)
+    {
+        if (visible)
+        {
+            renderer.enabled = true;
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+        }
+        else
+        {
+            renderer.enabled = true;
+            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
         }
     }
 
@@ -134,14 +146,12 @@ public class ChunkCuller : MonoBehaviour
         return new[]
         {
             c,
-            // Грани
             c + Vector3.up * e.y,
             c - Vector3.up * e.y,
             c + Vector3.right * e.x,
             c - Vector3.right * e.x,
             c + Vector3.forward * e.z,
             c - Vector3.forward * e.z,
-            // Углы
             c + new Vector3(e.x, e.y, e.z),
             c + new Vector3(-e.x, e.y, e.z),
             c + new Vector3(e.x, -e.y, e.z),

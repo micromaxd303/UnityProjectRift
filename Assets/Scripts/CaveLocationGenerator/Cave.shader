@@ -88,6 +88,59 @@ Shader "Custom/Triplanar"
             }
             ENDHLSL
         }
+
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+
+            HLSLPROGRAM
+            #pragma vertex ShadowVert
+            #pragma fragment ShadowFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            float3 _LightDirection;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            Varyings ShadowVert(Attributes IN)
+            {
+                Varyings OUT;
+                float3 worldPos = TransformObjectToWorld(IN.positionOS.xyz);
+                float3 worldNormal = TransformObjectToWorldNormal(IN.normalOS);
+                worldPos = ApplyShadowBias(worldPos, worldNormal, _LightDirection);
+                OUT.positionCS = TransformWorldToHClip(worldPos);
+
+                #if UNITY_REVERSED_Z
+                    OUT.positionCS.z = min(OUT.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #else
+                    OUT.positionCS.z = max(OUT.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #endif
+
+                return OUT;
+            }
+
+            half4 ShadowFrag(Varyings IN) : SV_Target
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
     }
 
     FallBack Off
