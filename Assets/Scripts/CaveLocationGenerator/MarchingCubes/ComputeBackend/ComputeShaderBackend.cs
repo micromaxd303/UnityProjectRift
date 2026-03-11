@@ -14,11 +14,14 @@ public class ComputeShaderBackend : IMarchingCubesBackend
     private ComputeBuffer _voxelBuffer;
     private ComputeBuffer _triangleBuffer;
     private ComputeBuffer _countBuffer;
-    private struct Triangle
+    public struct Triangle
     {
         public Vector3 VertexA;
+        public Vector3 NormalA;
         public Vector3 VertexB;
+        public Vector3 NormalB;
         public Vector3 VertexC;
+        public Vector3 NormalC;
     }
     
     public ComputeShaderBackend(ComputeShader shader)
@@ -40,10 +43,9 @@ public class ComputeShaderBackend : IMarchingCubesBackend
 
         // Буфер вокселей — переиспользуется каждый чанк
         _voxelBuffer = new ComputeBuffer(_totalSamples, sizeof(float));
-
-        // AppendStructuredBuffer — stride = 3 * float3 = 36 bytes
+        
         _triangleBuffer = new ComputeBuffer(
-            _maxTriangles, sizeof(float) * 9, ComputeBufferType.Append);
+            _maxTriangles, sizeof(float) * 18, ComputeBufferType.Append);
 
         // Счётчик для AppendBuffer
         _countBuffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);
@@ -103,6 +105,7 @@ public class ComputeShaderBackend : IMarchingCubesBackend
     private MeshData BuildMeshData(Triangle[] tris)
     {
         var vertices = new Vector3[tris.Length * 3];
+        var normals = new Vector3[tris.Length * 3];
         var triangles = new int[tris.Length * 3];
 
         for (int i = 0; i < tris.Length; i++)
@@ -113,12 +116,16 @@ public class ComputeShaderBackend : IMarchingCubesBackend
             vertices[idx + 1] = tris[i].VertexB;
             vertices[idx + 2] = tris[i].VertexC;
 
+            normals[idx]     = tris[i].NormalA;
+            normals[idx + 1] = tris[i].NormalB;
+            normals[idx + 2] = tris[i].NormalC;
+
             triangles[idx]     = idx;
             triangles[idx + 1] = idx + 1;
             triangles[idx + 2] = idx + 2;
         }
 
-        return new MeshData(vertices, triangles);
+        return new MeshData(vertices, normals, triangles);
     }
     
     public void Dispose()

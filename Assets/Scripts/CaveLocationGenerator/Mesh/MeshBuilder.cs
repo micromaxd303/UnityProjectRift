@@ -14,21 +14,23 @@ public class MeshBuilder
         _uvScale = uvScale;
     }
 
-    public void Build(Dictionary<Vector3Int, MeshData> chunks)
+    public Dictionary<Vector3Int, GameObject> Build(Dictionary<Vector3Int, MeshData> chunks)
     {
+        var result = new Dictionary<Vector3Int, GameObject>();
+
         foreach (var (coord, data) in chunks)
         {
             if (data.Vertices.Length == 0)
                 continue;
 
+            var optimized = MeshOptimizer.WeldVertices(data);
+
             var mesh = new Mesh
             {
-                vertices = data.Vertices,
-                triangles = data.Triangles
+                vertices = optimized.Vertices,
+                normals = optimized.Normals,
+                triangles = optimized.Triangles
             };
-
-            mesh.RecalculateNormals();
-            mesh.uv = GenerateUVs(mesh.vertices, mesh.normals);
             mesh.RecalculateTangents();
 
             var go = new GameObject($"Chunk_{coord.x}_{coord.y}_{coord.z}");
@@ -37,7 +39,11 @@ public class MeshBuilder
             go.AddComponent<MeshFilter>().mesh = mesh;
             go.AddComponent<MeshRenderer>().material = _material;
             go.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+            result[coord] = go;
         }
+
+        return result;
     }
 
     private Vector2[] GenerateUVs(Vector3[] vertices, Vector3[] normals)

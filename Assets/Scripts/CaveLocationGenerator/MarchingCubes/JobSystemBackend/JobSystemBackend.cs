@@ -123,21 +123,27 @@ public class JobSystemBackend : IMarchingCubesBackend
     private MeshData BuildMeshData(NativeArray<Triangle> tris, int count)
     {
         var vertices = new Vector3[count * 3];
+        var normals = new Vector3[count * 3];
         var triangles = new int[count * 3];
 
         for (int i = 0; i < count; i++)
         {
             int idx = i * 3;
+
             vertices[idx]     = tris[i].VertexA;
             vertices[idx + 1] = tris[i].VertexB;
             vertices[idx + 2] = tris[i].VertexC;
+
+            normals[idx]     = tris[i].NormalA;
+            normals[idx + 1] = tris[i].NormalB;
+            normals[idx + 2] = tris[i].NormalC;
 
             triangles[idx]     = idx;
             triangles[idx + 1] = idx + 1;
             triangles[idx + 2] = idx + 2;
         }
 
-        return new MeshData(vertices, triangles);
+        return new MeshData(vertices, normals, triangles);
     }
 
     public void Dispose()

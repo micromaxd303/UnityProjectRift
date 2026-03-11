@@ -4,8 +4,11 @@
 struct Triangle
 {
     float3 VertexA;
+    float3 NormalA;
     float3 VertexB;
+    float3 NormalB;
     float3 VertexC;
+    float3 NormalC;
 };
 
 StructuredBuffer<float> VoxelData;
@@ -20,10 +23,26 @@ int IndexFromCoord(int3 p)
     return p.x + p.y * SamplesPerAxis.x + p.z * SamplesPerAxis.x * SamplesPerAxis.y;
 }
 
-float3 InterpolateVertex(int2 edge, int3 id, float cubeCorners[8])
+float SampleDensity(int3 p)
 {
-    float3 p0 = float3(id + VertexOffset[edge.x]) + ChunkOffset;
-    float3 p1 = float3(id + VertexOffset[edge.y]) + ChunkOffset;
+    p = clamp(p, int3(0, 0, 0), SamplesPerAxis - 1);
+    return VoxelData[IndexFromCoord(p)];
+}
+
+float3 ComputeGradient(int3 p)
+{
+    return -normalize(float3(
+        SampleDensity(p + int3(1,0,0)) - SampleDensity(p - int3(1,0,0)),
+        SampleDensity(p + int3(0,1,0)) - SampleDensity(p - int3(0,1,0)),
+        SampleDensity(p + int3(0,0,1)) - SampleDensity(p - int3(0,0,1))
+    ));
+}
+
+void InterpolateVertex(int2 edge, int3 id, float cubeCorners[8],
+    out float3 pos, out float3 normal)
+{
+    int3 a = id + VertexOffset[edge.x];
+    int3 b = id + VertexOffset[edge.y];
 
     float v0 = cubeCorners[edge.x];
     float v1 = cubeCorners[edge.y];
@@ -31,7 +50,11 @@ float3 InterpolateVertex(int2 edge, int3 id, float cubeCorners[8])
     float denom = v1 - v0;
     float t = abs(denom) > 0.00001 ? (IsoLevel - v0) / denom : 0.5;
 
-    return lerp(p0, p1, t);
+    pos = lerp(float3(a), float3(b), t) + ChunkOffset;
+
+    float3 n0 = ComputeGradient(a);
+    float3 n1 = ComputeGradient(b);
+    normal = normalize(lerp(n0, n1, t));
 }
 
 [numthreads(8, 8, 8)]
@@ -59,12 +82,16 @@ void MarchingCubes(uint3 id : SV_DispatchThreadID)
     for (int k = 0; TriangleTable[cubeIndex * 16 + k] != -1; k += 3)
     {
         Triangle tri;
-        tri.VertexA = InterpolateVertex(
-            EdgeConnection[TriangleTable[cubeIndex * 16 + k]], id, cubeCorners);
-        tri.VertexB = InterpolateVertex(
-            EdgeConnection[TriangleTable[cubeIndex * 16 + k + 1]], id, cubeCorners);
-        tri.VertexC = InterpolateVertex(
-            EdgeConnection[TriangleTable[cubeIndex * 16 + k + 2]], id, cubeCorners);
+
+        InterpolateVertex(
+            EdgeConnection[TriangleTable[cubeIndex * 16 + k]],
+            id, cubeCorners, tri.VertexA, tri.NormalA);
+        InterpolateVertex(
+            EdgeConnection[TriangleTable[cubeIndex * 16 + k + 1]],
+            id, cubeCorners, tri.VertexB, tri.NormalB);
+        InterpolateVertex(
+            EdgeConnection[TriangleTable[cubeIndex * 16 + k + 2]],
+            id, cubeCorners, tri.VertexC, tri.NormalC);
 
         Triangles.Append(tri);
     }

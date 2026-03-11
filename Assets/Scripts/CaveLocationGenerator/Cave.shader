@@ -61,7 +61,13 @@ Shader "Custom/Triplanar"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                float3 n = abs(IN.worldNormal);
+                // Геометрическая нормаль для triplanar
+                float3 worldPosDdx = ddx(IN.worldPos);
+                float3 worldPosDdy = ddy(IN.worldPos);
+                float3 flatNormal = normalize(cross(worldPosDdy, worldPosDdx));
+
+                // Triplanar blend по flat нормали
+                float3 n = abs(flatNormal);
                 n = pow(n, _Sharpness);
                 n /= (n.x + n.y + n.z);
 
@@ -73,7 +79,7 @@ Shader "Custom/Triplanar"
 
                 half4 color = texX * n.x + texY * n.y + texZ * n.z;
 
-                // Простое освещение
+                // Сглаженная нормаль для освещения
                 Light mainLight = GetMainLight();
                 float NdotL = saturate(dot(normalize(IN.worldNormal), mainLight.direction));
                 float3 lighting = mainLight.color * NdotL + unity_AmbientSky.rgb;
