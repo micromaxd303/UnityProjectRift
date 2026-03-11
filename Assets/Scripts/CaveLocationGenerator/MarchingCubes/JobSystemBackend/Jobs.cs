@@ -93,25 +93,20 @@ public struct GenerateTrianglesJob : IJob
                 int2 e1 = EdgeConnection[TriangleTable[cubeIndex * 16 + i + 1]];
                 int2 e2 = EdgeConnection[TriangleTable[cubeIndex * 16 + i + 2]];
 
-                InterpolateVertex(e0, id, corners, out float3 posA, out float3 normA);
-                InterpolateVertex(e1, id, corners, out float3 posB, out float3 normB);
-                InterpolateVertex(e2, id, corners, out float3 posC, out float3 normC);
-
                 Output[triIndex++] = new Triangle
                 {
-                    VertexA = posA, NormalA = normA,
-                    VertexB = posB, NormalB = normB,
-                    VertexC = posC, NormalC = normC
+                    VertexA = InterpolateVertex(e0, id, corners),
+                    VertexB = InterpolateVertex(e1, id, corners),
+                    VertexC = InterpolateVertex(e2, id, corners)
                 };
             }
         }
     }
 
-    private void InterpolateVertex(int2 edge, int3 id, float8 corners,
-        out float3 pos, out float3 normal)
+    private float3 InterpolateVertex(int2 edge, int3 id, float8 corners)
     {
-        int3 a = id + VertexOffset[edge.x];
-        int3 b = id + VertexOffset[edge.y];
+        float3 p0 = (float3)(id + VertexOffset[edge.x]) + ChunkOffset;
+        float3 p1 = (float3)(id + VertexOffset[edge.y]) + ChunkOffset;
 
         float v0 = GetCornerValue(corners, edge.x);
         float v1 = GetCornerValue(corners, edge.y);
@@ -119,26 +114,7 @@ public struct GenerateTrianglesJob : IJob
         float denom = v1 - v0;
         float t = math.abs(denom) > 0.00001f ? (IsoLevel - v0) / denom : 0.5f;
 
-        pos = math.lerp((float3)a, (float3)b, t) + ChunkOffset;
-
-        float3 n0 = ComputeGradient(a);
-        float3 n1 = ComputeGradient(b);
-        normal = math.normalize(math.lerp(n0, n1, t));
-    }
-
-    private float3 ComputeGradient(int3 p)
-    {
-        return -math.normalize(new float3(
-            SampleDensity(p + new int3(1, 0, 0)) - SampleDensity(p - new int3(1, 0, 0)),
-            SampleDensity(p + new int3(0, 1, 0)) - SampleDensity(p - new int3(0, 1, 0)),
-            SampleDensity(p + new int3(0, 0, 1)) - SampleDensity(p - new int3(0, 0, 1))
-        ));
-    }
-
-    private float SampleDensity(int3 p)
-    {
-        p = math.clamp(p, int3.zero, SamplesPerAxis - 1);
-        return Voxels[Index(p.x, p.y, p.z)];
+        return math.lerp(p0, p1, t);
     }
 
     private int GetCubeIndex(int x, int y, int z)
@@ -199,9 +175,6 @@ public struct float8
 public struct Triangle
 {
     public Vector3 VertexA;
-    public Vector3 NormalA;
     public Vector3 VertexB;
-    public Vector3 NormalB;
     public Vector3 VertexC;
-    public Vector3 NormalC;
 }

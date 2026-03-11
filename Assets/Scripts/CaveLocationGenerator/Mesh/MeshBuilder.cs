@@ -29,9 +29,9 @@ public class MeshBuilder
             var mesh = new Mesh
             {
                 vertices = optimized.Vertices,
-                normals = optimized.Normals,
                 triangles = optimized.Triangles
             };
+            mesh.RecalculateNormals();
             mesh.RecalculateTangents();
 
             var go = new GameObject($"Chunk_{coord.x}_{coord.y}_{coord.z}");

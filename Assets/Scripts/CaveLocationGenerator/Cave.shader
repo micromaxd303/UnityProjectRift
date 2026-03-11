@@ -61,12 +61,11 @@ Shader "Custom/Triplanar"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                // Геометрическая нормаль для triplanar
                 float3 worldPosDdx = ddx(IN.worldPos);
                 float3 worldPosDdy = ddy(IN.worldPos);
                 float3 flatNormal = normalize(cross(worldPosDdy, worldPosDdx));
 
-                // Triplanar blend по flat нормали
+                // Triplanar
                 float3 n = abs(flatNormal);
                 n = pow(n, _Sharpness);
                 n /= (n.x + n.y + n.z);
@@ -79,9 +78,9 @@ Shader "Custom/Triplanar"
 
                 half4 color = texX * n.x + texY * n.y + texZ * n.z;
 
-                // Сглаженная нормаль для освещения
+                // Освещение — тоже flat normal
                 Light mainLight = GetMainLight();
-                float NdotL = saturate(dot(normalize(IN.worldNormal), mainLight.direction));
+                float NdotL = saturate(dot(flatNormal, mainLight.direction));
                 float3 lighting = mainLight.color * NdotL + unity_AmbientSky.rgb;
 
                 return half4(color.rgb * lighting, 1.0);
@@ -118,12 +117,21 @@ Shader "Custom/Triplanar"
                 float4 positionCS : SV_POSITION;
             };
 
+            float3 GetGeometricNormal(float3 worldPos)
+            {
+                return normalize(cross(ddy(worldPos), ddx(worldPos)));
+            }
+
             Varyings ShadowVert(Attributes IN)
             {
                 Varyings OUT;
                 float3 worldPos = TransformObjectToWorld(IN.positionOS.xyz);
-                float3 worldNormal = TransformObjectToWorldNormal(IN.normalOS);
-                worldPos = ApplyShadowBias(worldPos, worldNormal, _LightDirection);
+
+                // Только depth bias, без normal bias
+                float invNdotL = 1.0 - saturate(dot(
+                    TransformObjectToWorldNormal(IN.normalOS), _LightDirection));
+                worldPos += _LightDirection * 0.05;
+
                 OUT.positionCS = TransformWorldToHClip(worldPos);
 
                 #if UNITY_REVERSED_Z
@@ -131,6 +139,9 @@ Shader "Custom/Triplanar"
                 #else
                     OUT.positionCS.z = max(OUT.positionCS.z, UNITY_NEAR_CLIP_VALUE);
                 #endif
+
+                // Дополнительный depth bias в clip space
+                OUT.positionCS.z += 0.001;
 
                 return OUT;
             }

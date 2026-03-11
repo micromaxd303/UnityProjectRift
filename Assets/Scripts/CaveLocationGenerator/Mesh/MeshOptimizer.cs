@@ -11,7 +11,6 @@ public static class MeshOptimizer
     {
         var vertexMap = new Dictionary<long, List<int>>();
         var vertices = new List<Vector3>();
-        var normals = new List<Vector3>();
         var triangles = new int[input.Triangles.Length];
 
         for (int i = 0; i < input.Vertices.Length; i++)
@@ -34,14 +33,12 @@ public static class MeshOptimizer
 
             if (foundIndex >= 0)
             {
-                normals[foundIndex] = (normals[foundIndex] + input.Normals[i]).normalized;
                 triangles[i] = foundIndex;
             }
             else
             {
                 int newIndex = vertices.Count;
                 vertices.Add(v);
-                normals.Add(input.Normals[i]);
                 triangles[i] = newIndex;
 
                 if (!vertexMap.ContainsKey(hash))
@@ -50,11 +47,7 @@ public static class MeshOptimizer
             }
         }
 
-        return new MeshData(
-            vertices.ToArray(),
-            normals.ToArray(),
-            triangles.ToArray()
-        );
+        return new MeshData(vertices.ToArray(), triangles);
     }
 
     private static long HashVertex(Vector3 v)

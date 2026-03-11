@@ -139,16 +139,12 @@ public class JobSystemBackend : IMarchingCubesBackend
             vertices[idx + 1] = tris[i].VertexB;
             vertices[idx + 2] = tris[i].VertexC;
 
-            normals[idx]     = tris[i].NormalA;
-            normals[idx + 1] = tris[i].NormalB;
-            normals[idx + 2] = tris[i].NormalC;
-
             triangles[idx]     = idx;
             triangles[idx + 1] = idx + 1;
             triangles[idx + 2] = idx + 2;
         }
 
-        return new MeshData(vertices, normals, triangles);
+        return new MeshData(vertices, triangles);
     }
 
     public void Dispose()
