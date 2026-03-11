@@ -16,6 +16,6 @@ MonoBehaviour:
   <ChunkSize>k__BackingField: {x: 16, y: 16, z: 16}
   <VoxelSize>k__BackingField: 1
   <SurfaceLevel>k__BackingField: 0
-  <PreferredBackend>k__BackingField: 2
+  <PreferredBackend>k__BackingField: 0
   <PreferredGraphicsAPI>k__BackingField: 0
   <RecommendationThreshold>k__BackingField: 2
