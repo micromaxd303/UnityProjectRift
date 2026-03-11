@@ -6,8 +6,8 @@ public static class MarchingCubesTables
 {
     public static readonly int3[] VertexOffset = new int3[8]
     {
-        new int3(0, 0, 0), new int3(1, 0, 0), new int3(1, 0, 1), new int3(0, 0, 1),
-        new int3(0, 1, 0), new int3(1, 1, 0), new int3(1, 1, 1), new int3(0, 1, 1)
+        new int3(0, 0, 0), new int3(1, 0, 0), new int3(1, 1, 0), new int3(0, 1, 0),
+        new int3(0, 0, 1), new int3(1, 0, 1), new int3(1, 1, 1), new int3(0, 1, 1)
     };
     
     public static readonly int2[] EdgeConnection = new int2[12]

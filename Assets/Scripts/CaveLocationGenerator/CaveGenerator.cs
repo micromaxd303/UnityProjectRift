@@ -13,7 +13,10 @@ public class CaveGenerator : MonoBehaviour
     private IPlatformProvider _platformProvider;
     private BackendSelector _backendSelector;
     private IVoxelDataProvider _voxelDataProvider;
-    private ComputeShaderBackend back;
+    
+    private IMarchingCubesBackend back;
+    
+    
     private MeshBuilder _meshBuilder;
     
     
@@ -30,7 +33,9 @@ public class CaveGenerator : MonoBehaviour
         _voxelDataProvider = new VoxelDataGenerator(config);
 
 
-        back = new ComputeShaderBackend(shader);
+        //back = new ComputeShaderBackend(shader);
+
+        back = new JobSystemBackend();
         
         back.Initialize(config);
 
