@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8289c4e5025595947a6215663eed0450, type: 3}
+  m_Name: CaveGenerationConfig
+  m_EditorClassIdentifier: 
+  MinNodeDistance: 50
+  MaxNodes: 12
+  WorldMargin: 10
+  ExtraEdgeRatio: 1
+  BaseHeightNormalized: 0.5
+  HeightVariation: 8
+  TunnelRadius: 5
+  HallRadius: 7
+  DeadendRadius: 6
+  SpawnRadius: 8
+  ExtractRadius: 8
+  ObjectiveRadius: 17
+  FloorDepth: 1
+  CeilingHeightRatio: 0.909
+  NoiseScale: 0.25
+  NoiseAmplitude: 2
+  NoiseOffset: 0
+  SmoothBlendFactor: 0

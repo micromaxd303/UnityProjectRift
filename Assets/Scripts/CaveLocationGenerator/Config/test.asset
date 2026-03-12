@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af53a15a9c4637649b1c14559720d967, type: 3}
   m_Name: test
   m_EditorClassIdentifier: 
-  <WorldSize>k__BackingField: {x: 50, y: 5, z: 50}
+  <WorldSize>k__BackingField: {x: 20, y: 10, z: 20}
   <ChunkSize>k__BackingField: {x: 16, y: 16, z: 16}
   <VoxelSize>k__BackingField: 1
   <SurfaceLevel>k__BackingField: 0

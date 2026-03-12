@@ -20,7 +20,7 @@ MonoBehaviour:
   GroundedGraceTime: 0.1
   groundMask:
     serializedVersion: 2
-    m_Bits: 19
+    m_Bits: 83
   CoyoteTimeDuration: 0.1
   WalkSpeed: 10
   WalkAcceleration: 50
