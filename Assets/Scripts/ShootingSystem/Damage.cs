@@ -15,6 +15,7 @@ public readonly struct DamagePacket
     private readonly float[] values;
     public readonly float CriticalDamage;
     public readonly int StatusBuildup;
+    public readonly DamageType damageType;
     public float this[DamageType t] => values[(int)t];
     public float Total 
     { 
@@ -26,12 +27,13 @@ public readonly struct DamagePacket
         }
     }
 
-    public DamagePacket(float[] values, float criticalDamage, int statusBuildup)
+    public DamagePacket(float[] values, float criticalDamage, int statusBuildup, DamageType damageType)
     {
         this.values = new float[values.Length];
         for (int i = 0; i < values.Length; i++) this.values[i] = values[i];
         CriticalDamage = criticalDamage;
         StatusBuildup = statusBuildup;
+        this.damageType = damageType;
     }
     public void Multiply(float multiplier)
     {

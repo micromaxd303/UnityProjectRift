@@ -44,7 +44,7 @@ public class WeaponRaycast : Weapon
 
                     int statusUnits = (int)((float)weaponConfig.statusUnits * ammoTypeConfig.StatusMultiplier);
 
-                    DamagePacket damagePacket = new DamagePacket(ammoTypeConfig.DamageDistribution, isCriticalDamage ? crit : 0f, statusUnits);
+                    DamagePacket damagePacket = new DamagePacket(ammoTypeConfig.DamageDistribution, isCriticalDamage ? crit : 0f, statusUnits, ammoTypeConfig.ProjectileType);
                     damagePacket.Multiply(weaponConfig.BaseDamage);
 
                     DamageContext damageContext = new DamageContext(damagePacket)
