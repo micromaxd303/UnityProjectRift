@@ -1,19 +1,27 @@
-using System.Collections;
-using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
+[AddComponentMenu("Shooting system/Shooting controller")]
 public class ShootingController : MonoBehaviour
 {
     public Weapon weapon;
+
+    public static ShootingController instance;
+
+    private void Awake()
+    {
+        instance = this;
+    }
 
     private void Update()
     {
         if (weapon)
         {
-            if (Input.GetMouseButtonDown(0)) weapon.Shoot();
-            else if (Input.GetKeyDown(KeyCode.R)) weapon.Recharge();
+            if (weapon.weaponConfig.AutoShooting)
+            {
+                if (Input.GetMouseButton(0)) weapon.Shoot();
+            }
+            else if (Input.GetMouseButtonDown(0)) weapon.Shoot();
         }
+        else if (Input.GetKeyDown(KeyCode.R)) weapon.Recharge();
     }
 }

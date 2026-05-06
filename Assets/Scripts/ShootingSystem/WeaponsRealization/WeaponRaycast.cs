@@ -40,11 +40,17 @@ public class WeaponRaycast : Weapon
                     bool isCriticalDamage = Random.value < weaponConfig.chanceCriticalDamage;
 
                     float crit = weaponConfig.BaseDamage * weaponConfig.criticalDamage * 0.01f; 
-                    if (weaponConfig.chanceCriticalDamage == 1f) crit = weaponConfig.BaseDamage * weaponConfig.criticalDamage * 0.01f;
 
                     int statusUnits = (int)((float)weaponConfig.statusUnits * ammoTypeConfig.StatusMultiplier);
 
-                    DamagePacket damagePacket = new DamagePacket(ammoTypeConfig.DamageDistribution, isCriticalDamage ? crit : 0f, statusUnits, ammoTypeConfig.ProjectileType);
+                    DamagePacket damagePacket = new DamagePacket(
+                        ammoTypeConfig.DamageDistribution, 
+                        crit, 
+                        weaponConfig.chanceCriticalDamage, 
+                        isCriticalDamage, 
+                        statusUnits, 
+                        ammoTypeConfig.ProjectileType);
+
                     damagePacket.Multiply(weaponConfig.BaseDamage);
 
                     DamageContext damageContext = new DamageContext(damagePacket)

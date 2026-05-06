@@ -19,11 +19,11 @@ MonoBehaviour:
   distance: 500
   criticalDamage: 25
   chanceCriticalDamage: 0.25
-  statusUnits: 2
+  statusUnits: 1
   countBulletInOneShot: 1
   timeToStart: 0
-  timeCooldownShoot: 0.1
+  timeCooldownShoot: 0.01
   rechargeTime: 1.5
   maxBulletCountInWeapon: 1500
-  maxBulletCount: 10
+  maxBulletCount: 500
   AutoShooting: 0
