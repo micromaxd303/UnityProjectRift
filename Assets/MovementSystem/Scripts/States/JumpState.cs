@@ -52,8 +52,8 @@ public class JumpingState : MovementState
             if (!SM.Motor.CanStandUp())
                 return MovementType.Crouching;
             
-            if (SM.Input.MoveInput.sqrMagnitude > 0.01f)
-                return SM.Input.SprintHeld ? MovementType.Sprinting : MovementType.Walking;
+            if (SM.Input.Movement.Move.sqrMagnitude > 0.01f)
+                return SM.Input.Movement.Sprint.Held ? MovementType.Sprinting : MovementType.Walking;
             return MovementType.Idle;
         }
         
@@ -64,7 +64,7 @@ public class JumpingState : MovementState
     {
         timer -= Time.deltaTime;
         
-        var input = SM.Input.MoveInput;
+        var input = SM.Input.Movement.Move;
         if (input.sqrMagnitude < 0.01f) return;
         
         var direction = new Vector3(input.x, 0, input.y).normalized;

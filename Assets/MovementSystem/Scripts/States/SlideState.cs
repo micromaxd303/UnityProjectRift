@@ -43,7 +43,7 @@ public class SlidingState : MovementState
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
-        if (SM.Input.JumpPressed && SM.Motor.CanJump)
+        if (SM.Input.Movement.Jump.Pressed && SM.Motor.CanJump)
         {
             if (!SM.Motor.CanStandUp())
                 return null;
@@ -51,23 +51,23 @@ public class SlidingState : MovementState
             return MovementType.Jumping;
         }
 
-        if (SM.Input.DashPressed)
+        if (SM.Input.Movement.Dash.Pressed)
             return MovementType.Dashing;
 
         if (SM.Motor.Speed < cfg.MinSlideSpeed)
         {
-            if (SM.Input.CrouchHeld)
+            if (SM.Input.Movement.Crouch.Held)
                 return MovementType.Crouching;
             
             if (!SM.Motor.CanStandUp())
                 return MovementType.Crouching;
             
-            return SM.Input.MoveInput.sqrMagnitude > 0.01f
-                ? (SM.Input.SprintHeld ? MovementType.Sprinting : MovementType.Walking)
+            return SM.Input.Movement.Move.sqrMagnitude > 0.01f
+                ? (SM.Input.Movement.Sprint.Held ? MovementType.Sprinting : MovementType.Walking)
                 : MovementType.Idle;
         }
         
-        if (!SM.Input.CrouchHeld)
+        if (!SM.Input.Movement.Crouch.Held)
         {
             if (!SM.Motor.CanStandUp())
             {
@@ -77,9 +77,9 @@ public class SlidingState : MovementState
                 return null;
             }
             
-            if (SM.Input.MoveInput.sqrMagnitude > 0.01f)
+            if (SM.Input.Movement.Move.sqrMagnitude > 0.01f)
             {
-                return SM.Input.SprintHeld 
+                return SM.Input.Movement.Sprint.Held 
                     ? MovementType.Sprinting 
                     : MovementType.Walking;
             }
@@ -92,7 +92,7 @@ public class SlidingState : MovementState
     public override void Update()
     {
         var cfg = SM.Config;
-        var input = SM.Input.MoveInput;
+        var input = SM.Input.Movement.Move;
         var wishDirection = new Vector3(input.x, 0, input.y);
         
         SM.Motor.SlideMove(wishDirection, cfg.BaseSlideSpeed, cfg.SlideAcceleration);

@@ -13,15 +13,15 @@ public class IdleState : MovementState
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
-        if (SM.Input.JumpPressed)
+        if (SM.Input.Movement.Jump.Pressed)
             return MovementType.Jumping;
         
-        if (SM.Input.CrouchPressed)
+        if (SM.Input.Movement.Crouch.Pressed)
             return MovementType.Crouching;
         
-        if (SM.Input.MoveInput.sqrMagnitude > 0.01f)
+        if (SM.Input.Movement.Move.sqrMagnitude > 0.01f)
         {
-            return SM.Input.SprintHeld 
+            return SM.Input.Movement.Sprint.Held 
                 ? MovementType.Sprinting 
                 : MovementType.Walking;
         }

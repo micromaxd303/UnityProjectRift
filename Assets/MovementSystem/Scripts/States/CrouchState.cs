@@ -19,24 +19,24 @@ public class CrouchState : MovementState
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
-        if (SM.Input.DashPressed)
+        if (SM.Input.Movement.Dash.Pressed)
             return MovementType.Dashing;
         
-        if (SM.Input.JumpPressed && SM.Motor.CanJump)
+        if (SM.Input.Movement.Jump.Pressed && SM.Motor.CanJump)
             return MovementType.Jumping;
         
         if (SM.Motor.Speed > SM.Config.MinSlideSpeed && SM.Motor.CanStartSlide())
             return MovementType.Sliding;
         
-        if (!SM.Input.CrouchHeld)
+        if (!SM.Input.Movement.Crouch.Held)
         {
             if (!SM.Motor.CanStandUp())
                 return null;
             
-            if (SM.Input.MoveInput.sqrMagnitude < 0.01f)
+            if (SM.Input.Movement.Move.sqrMagnitude < 0.01f)
                 return MovementType.Idle;
             
-            return SM.Input.SprintHeld
+            return SM.Input.Movement.Sprint.Held
                 ? MovementType.Sprinting
                 : MovementType.Walking;
         }
@@ -46,7 +46,7 @@ public class CrouchState : MovementState
     
     public override void Update()
     {
-        var input = SM.Input.MoveInput;
+        var input = SM.Input.Movement.Move;
         var direction = new Vector3(input.x, 0, input.y).normalized;
         
         SM.Motor.Move(direction, SM.Config.CrouchSpeed, SM.Config.CrouchAcceleration);

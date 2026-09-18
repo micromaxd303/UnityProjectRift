@@ -614,17 +614,6 @@
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "",
-                    "id": "a68c51b7-71ec-427a-b539-04635e39f98b",
-                    "path": "<Gamepad>/leftStick",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Navigate",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
                     "name": "2D Vector",
                     "id": "6488a832-247e-4e37-89eb-c5740c0a5a34",
                     "path": "2DVector",

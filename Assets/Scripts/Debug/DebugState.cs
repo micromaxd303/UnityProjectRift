@@ -7,9 +7,9 @@ public class DebugState : MonoBehaviour
 {
     [SerializeField] private MovementStateMachine stateMachine;
     [SerializeField] private PlayerMotor motor;
-    [SerializeField] private InputManager inputManager;
     [SerializeField] private Key toggleKey = Key.F1;
     [SerializeField] private Key cycleModeKey = Key.F2;
+    [SerializeField] private Key toggleInputModeKey = Key.F3;
     
     private bool showDebug = true;
     private int displayMode = 0;
@@ -39,6 +39,11 @@ public class DebugState : MonoBehaviour
     private string lastScrollDirection = "—";
     private const float ScrollDisplayDuration = 0.3f;
     
+    // Отображение выбранного слота
+    private float slotDisplayTime;
+    private int lastSelectedSlot = -1;
+    private const float SlotDisplayDuration = 0.5f;
+    
     // Кэшированные текстуры
     private Texture2D boxTexture;
     private Texture2D whiteTexture;
@@ -51,6 +56,7 @@ public class DebugState : MonoBehaviour
     private GUIStyle cachedSectionStyle;
     private GUIStyle cachedKeyStyle;
     private GUIStyle cachedHintStyle;
+    private GUIStyle cachedAutoPanelStyle;
     private bool stylesInitialized;
     
     // Кэшированные значения motor (обновляются в Update, читаются в OnGUI)
@@ -144,7 +150,13 @@ public class DebugState : MonoBehaviour
             
             if (kb[cycleModeKey].wasPressedThisFrame)
                 displayMode = (displayMode + 1) % DisplayModeCount;
+            
+            // Клавиша читается напрямую с клавиатуры, поэтому работает в любом режиме
+            if (kb[toggleInputModeKey].wasPressedThisFrame)
+                ToggleInputMode();
         }
+        
+        UpdateInputTimers();
         
         if (stateMachine == null || motor == null)
             return;
@@ -176,6 +188,56 @@ public class DebugState : MonoBehaviour
             speedHistory[speedHistoryIndex] = cachedSpeed;
             speedHistoryIndex = (speedHistoryIndex + 1) % speedHistory.Length;
             maxRecordedSpeed = Mathf.Max(maxRecordedSpeed, cachedSpeed);
+        }
+    }
+    
+    // Переключает только карты действий. Курсор, timeScale и окна меню не трогает —
+    // это зона ответственности игровой логики, а не дебага
+    private void ToggleInputMode()
+    {
+        var input = GameServices.Input;
+        if (input == null)
+            return;
+        
+        input.SetMode(input.CurrentMode == InputMode.Gameplay ? InputMode.UI : InputMode.Gameplay);
+    }
+    
+    // OnGUI вызывается несколько раз за кадр, поэтому таймеры и одноразовые
+    // события (скролл, выбор слота) отслеживаются здесь, а не в DrawInputPanel
+    private void UpdateInputTimers()
+    {
+        // unscaled, чтобы индикаторы работали и на паузе (timeScale = 0)
+        if (scrollDisplayTime > 0)
+            scrollDisplayTime -= Time.unscaledDeltaTime;
+        if (slotDisplayTime > 0)
+            slotDisplayTime -= Time.unscaledDeltaTime;
+        
+        var mouse = Mouse.current;
+        if (mouse != null)
+        {
+            float scrollY = mouse.scroll.ReadValue().y;
+            
+            if (scrollY > 0.1f)
+            {
+                lastScrollDirection = "▲ Up";
+                scrollDisplayTime = ScrollDisplayDuration;
+            }
+            else if (scrollY < -0.1f)
+            {
+                lastScrollDirection = "▼ Down";
+                scrollDisplayTime = ScrollDisplayDuration;
+            }
+        }
+        
+        var input = GameServices.Input;
+        if (input == null)
+            return;
+        
+        int slot = input.Combat.SelectedSlot;
+        if (slot != -1)
+        {
+            lastSelectedSlot = slot;
+            slotDisplayTime = SlotDisplayDuration;
         }
     }
     
@@ -223,6 +285,12 @@ public class DebugState : MonoBehaviour
             normal = { textColor = Color.white }
         };
         
+        // Фон, который сам растягивается под содержимое (для BeginVertical)
+        cachedAutoPanelStyle = new GUIStyle(cachedBoxStyle)
+        {
+            padding = new RectOffset(10, 10, 5, 8)
+        };
+        
         cachedHintStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 11,
@@ -249,8 +317,8 @@ public class DebugState : MonoBehaviour
             case 3: DrawInputPanel(); break;
         }
         
-        GUI.Label(new Rect(10, Screen.height - 25, 300, 20), 
-            $"{toggleKey}=Toggle | {cycleModeKey}=Mode ({GetModeName()})", cachedHintStyle);
+        GUI.Label(new Rect(10, Screen.height - 25, 450, 20), 
+            $"{toggleKey}=Toggle | {cycleModeKey}=Mode ({GetModeName()}) | {toggleInputModeKey}=Input Mode", cachedHintStyle);
     }
     
     private string GetModeName() => displayMode switch
@@ -410,92 +478,99 @@ public class DebugState : MonoBehaviour
     
     private void DrawInputPanel()
     {
-        var kb = Keyboard.current;
+        var input = GameServices.Input;
         var mouse = Mouse.current;
         
-        GUI.Box(new Rect(10, 10, 320, 360), "", cachedBoxStyle);
-        GUILayout.BeginArea(new Rect(20, 15, 300, 350));
+        // Высота панели не задаётся вручную: область берётся с запасом,
+        // а фон рисует BeginVertical ровно по размеру содержимого
+        GUILayout.BeginArea(new Rect(10, 10, 320, Screen.height - 40));
+        GUILayout.BeginVertical(cachedAutoPanelStyle);
         
         GUILayout.Label("[INPUT DEBUG]", cachedHeaderStyle);
         GUILayout.Space(3);
         
-        // Move Vector
-        if (inputManager != null)
+        if (input == null)
         {
-            Vector2 move = inputManager.MoveInput;
-            bool moveActive = move.sqrMagnitude > 0.01f;
-            GUI.color = moveActive ? Color.green : Color.gray;
-            GUILayout.Label($"Move: ({move.x:F1}, {move.y:F1})", cachedLabelStyle);
+            GUI.color = Color.red;
+            GUILayout.Label("GameServices.Input == null", cachedLabelStyle);
             GUI.color = Color.white;
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+            return;
         }
+        
+        // Текущий режим: какая карта действий включена
+        GUI.color = input.CurrentMode == InputMode.Gameplay ? Color.green : Color.yellow;
+        GUILayout.Label($"Mode: {input.CurrentMode}", cachedLabelStyle);
+        GUI.color = Color.white;
+        
+        // Кликабельна, только когда курсор свободен; иначе — клавиша toggleInputModeKey
+        string targetMode = input.CurrentMode == InputMode.Gameplay ? "UI" : "Gameplay";
+        if (GUILayout.Button($"Switch to {targetMode} ({toggleInputModeKey})"))
+            ToggleInputMode();
+        
+        // Move Vector
+        Vector2 move = input.Movement.Move;
+        bool moveActive = move.sqrMagnitude > 0.01f;
+        GUI.color = moveActive ? Color.green : Color.gray;
+        GUILayout.Label($"Move: ({move.x:F1}, {move.y:F1})", cachedLabelStyle);
+        GUI.color = Color.white;
         
         GUILayout.Space(3);
         
-        // Две колонки с кнопками
+        // Две колонки: показываем действия, а не клавиши —
+        // так панель не зависит от биндингов и видно, какая карта отключена
         GUILayout.BeginHorizontal();
         
         // Левая колонка
         GUILayout.BeginVertical(GUILayout.Width(145));
         GUILayout.Label("MOVEMENT", cachedSectionStyle);
-        if (kb != null)
-        {
-            DrawKey("W", kb.wKey.isPressed);
-            DrawKey("A", kb.aKey.isPressed);
-            DrawKey("S", kb.sKey.isPressed);
-            DrawKey("D", kb.dKey.isPressed);
-            DrawKey("Space", kb.spaceKey.isPressed);
-            DrawKey("Shift", kb.leftShiftKey.isPressed);
-            DrawKey("Ctrl", kb.leftCtrlKey.isPressed);
-            DrawKey("F (Dash)", kb.fKey.isPressed);
-        }
+        DrawKey("Jump", input.Movement.Jump.Held);
+        DrawKey("Dash", input.Movement.Dash.Held);
+        DrawKey("Sprint", input.Movement.Sprint.Held);
+        DrawKey("Crouch", input.Movement.Crouch.Held);
+        
+        GUILayout.Space(4);
+        GUILayout.Label("MENU", cachedSectionStyle);
+        DrawKey("Interact", input.Menu.Interact.Held);
+        DrawKey("Map", input.Menu.Map.Held);
+        DrawKey("Inventory", input.Menu.Inventory.Held);
+        DrawKey("Pause", input.Menu.Pause.Held);
         GUILayout.EndVertical();
         
         // Правая колонка
         GUILayout.BeginVertical(GUILayout.Width(145));
-        GUILayout.Label("ACTIONS", cachedSectionStyle);
-        if (kb != null && mouse != null)
-        {
-            DrawKey("LMB", mouse.leftButton.isPressed);
-            DrawKey("RMB", mouse.rightButton.isPressed);
-            DrawKey("R", kb.rKey.isPressed);
-            DrawKey("E", kb.eKey.isPressed);
-            DrawKey("Q", kb.qKey.isPressed);
-            DrawKey("V", kb.vKey.isPressed);
-            DrawKey("1/2/3", kb.digit1Key.isPressed || kb.digit2Key.isPressed || kb.digit3Key.isPressed);
-            DrawKey("Tab/Esc", kb.tabKey.isPressed || kb.escapeKey.isPressed);
-        }
+        GUILayout.Label("COMBAT", cachedSectionStyle);
+        DrawKey("Fire", input.Combat.Fire.Held);
+        DrawKey("Reload", input.Combat.Reload.Held);
+        DrawKey("Heal", input.Combat.Heal.Held);
+        DrawKey("Equipment 1", input.Combat.Equipment1.Held);
+        DrawKey("Equipment 2", input.Combat.Equipment2.Held);
+        
+        GUILayout.Space(4);
+        GUILayout.Label("UI", cachedSectionStyle);
+        DrawKey("Submit", input.UI.Submit.Held);
+        DrawKey("Cancel", input.UI.Cancel.Held);
+        DrawKey("Left Click", input.UI.LeftClick.Held);
+        DrawKey("Right Click", input.UI.RightClick.Held);
+        DrawKey("Middle Click", input.UI.MiddleClick.Held);
         GUILayout.EndVertical();
         
         GUILayout.EndHorizontal();
         
         GUILayout.Space(6);
         
+        // Weapon Slot (значение держится SlotDisplayDuration, см. UpdateInputTimers)
+        bool slotActive = slotDisplayTime > 0;
+        GUI.color = slotActive ? Color.yellow : Color.gray;
+        GUILayout.Label($"Slot: {(slotActive ? lastSelectedSlot.ToString() : "—")}", cachedLabelStyle);
+        GUI.color = Color.white;
+        
         // Scroll
-        if (mouse != null)
-        {
-            Vector2 scroll = mouse.scroll.ReadValue();
-            
-            if (scroll.y > 0.1f)
-            {
-                lastScrollDirection = "▲ Up";
-                scrollDisplayTime = ScrollDisplayDuration;
-            }
-            else if (scroll.y < -0.1f)
-            {
-                lastScrollDirection = "▼ Down";
-                scrollDisplayTime = ScrollDisplayDuration;
-            }
-            
-            if (scrollDisplayTime > 0)
-                scrollDisplayTime -= Time.deltaTime;
-            
-            bool scrollActive = scrollDisplayTime > 0;
-            string displayText = scrollActive ? lastScrollDirection : "—";
-            
-            GUI.color = scrollActive ? Color.yellow : Color.gray;
-            GUILayout.Label($"Scroll: {displayText}", cachedLabelStyle);
-            GUI.color = Color.white;
-        }
+        bool scrollActive = scrollDisplayTime > 0;
+        GUI.color = scrollActive ? Color.yellow : Color.gray;
+        GUILayout.Label($"Scroll: {(scrollActive ? lastScrollDirection : "—")}", cachedLabelStyle);
+        GUI.color = Color.white;
         
         // Mouse Delta
         if (mouse != null)
@@ -506,6 +581,7 @@ public class DebugState : MonoBehaviour
             GUI.color = Color.white;
         }
         
+        GUILayout.EndVertical();
         GUILayout.EndArea();
     }
     

@@ -1,13 +1,11 @@
 using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
-    private InputManager input;
     private PlayerMotor motor;
     private MovementStateMachine stateMachine;
     
     private void Awake()
     {
-        input = GetComponent<InputManager>();
         motor = GetComponent<PlayerMotor>();
         stateMachine = GetComponent<MovementStateMachine>();
     }
@@ -18,7 +16,7 @@ public class PlayerController : MonoBehaviour
         
         DontDestroyOnLoad(transform.parent.gameObject);
         
-        stateMachine.Initialize(input, motor);
+        stateMachine.Initialize(GameServices.Input, motor);
         
         stateMachine.RegisterState(MovementType.Idle, new IdleState(stateMachine));
         stateMachine.RegisterState(MovementType.Walking, new WalkState(stateMachine));

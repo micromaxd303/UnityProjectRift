@@ -6,7 +6,7 @@ public class DashingState : MovementState
     
     public override void Enter()
     {
-        SM.Motor.StartDash(SM.Input.MoveInput);
+        SM.Motor.StartDash(SM.Input.Movement.Move);
     }
     
     public override void Exit()
@@ -25,12 +25,12 @@ public class DashingState : MovementState
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
-        if (SM.Input.CrouchHeld)
+        if (SM.Input.Movement.Crouch.Pressed)
             return MovementType.Crouching;
         
-        if (SM.Input.MoveInput.magnitude > 0.1f)
+        if (SM.Input.Movement.Move.magnitude > 0.1f)
         {
-            return SM.Input.SprintHeld
+            return SM.Input.Movement.Sprint.Held
                 ? MovementType.Sprinting
                 : MovementType.Walking;
         }

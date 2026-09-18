@@ -9,19 +9,19 @@ public class SprintState : MovementState
         if (!SM.Motor.IsGrounded)
             return MovementType.AirControl;
         
-        if (SM.Input.JumpPressed)
+        if (SM.Input.Movement.Jump.Pressed)
             return MovementType.Jumping;
         
-        if (SM.Input.DashPressed)
+        if (SM.Input.Movement.Dash.Pressed)
             return MovementType.Dashing;
         
-        if (SM.Input.CrouchPressed)
+        if (SM.Input.Movement.Crouch.Pressed)
             return MovementType.Crouching;
         
-        if (SM.Input.MoveInput.sqrMagnitude < 0.01f)
+        if (SM.Input.Movement.Move.sqrMagnitude < 0.01f)
             return MovementType.Idle;
         
-        if (!SM.Input.SprintHeld)
+        if (!SM.Input.Movement.Sprint.Held)
             return MovementType.Walking;
         
         return null;
@@ -29,7 +29,7 @@ public class SprintState : MovementState
     
     public override void Update()
     {
-        var input = SM.Input.MoveInput;
+        var input = SM.Input.Movement.Move;
         if (input.sqrMagnitude < 0.01f) return;
         var direction = new Vector3(input.x, 0, input.y).normalized;
         

@@ -351,7 +351,6 @@ GameObject:
   - component: {fileID: 7276666169231723474}
   - component: {fileID: 2552296786516215123}
   - component: {fileID: 2495370521588760473}
-  - component: {fileID: 5616003140797368554}
   - component: {fileID: 2346354303238530289}
   - component: {fileID: 7235230718970266558}
   - component: {fileID: 1693916316720499591}
@@ -415,18 +414,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5616003140797368554
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2516082292473192246}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fbb58dd898154fc4eb3af4c8ed3b8575, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &2346354303238530289
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -471,7 +458,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateMachine: {fileID: 2346354303238530289}
   motor: {fileID: 7235230718970266558}
-  inputManager: {fileID: 5616003140797368554}
+  inputManager: {fileID: 0}
   toggleKey: 94
   cycleModeKey: 95
 --- !u!1 &6100262870540472245

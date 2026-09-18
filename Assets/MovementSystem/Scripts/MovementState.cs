@@ -13,7 +13,6 @@ public enum MovementType
 public abstract class MovementState
 {
     protected MovementStateMachine SM;
-
     public MovementState(MovementStateMachine stateMachine)
     {
         SM = stateMachine;

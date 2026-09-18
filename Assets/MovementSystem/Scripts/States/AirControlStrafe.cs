@@ -6,17 +6,17 @@ public class AirControlState : MovementState
     
     public override MovementType? CheckTransitions()
     {
-        if (SM.Input.DashPressed)
+        if (SM.Input.Movement.Dash.Pressed)
             return MovementType.Dashing;
         
         if (SM.Motor.IsGrounded)
         {
-            if (SM.Input.CrouchHeld || !SM.Motor.CanStandUp())
+            if (SM.Input.Movement.Crouch.Pressed || !SM.Motor.CanStandUp())
                 return MovementType.Crouching;
             
-            if (SM.Input.MoveInput.sqrMagnitude > 0.01f)
+            if (SM.Input.Movement.Move.sqrMagnitude > 0.01f)
             {
-                return SM.Input.SprintHeld
+                return SM.Input.Movement.Sprint.Held
                     ? MovementType.Sprinting
                     : MovementType.Walking;
             }
@@ -29,7 +29,7 @@ public class AirControlState : MovementState
     
     public override void Update()
     {
-        var input = SM.Input.MoveInput;
+        var input = SM.Input.Movement.Move;
         if (input.sqrMagnitude < 0.01f) return;
         var wishDirection = new Vector3(input.x, 0, input.y).normalized;
         
