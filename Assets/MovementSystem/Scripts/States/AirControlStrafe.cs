@@ -11,7 +11,7 @@ public class AirControlState : MovementState
         
         if (SM.Motor.IsGrounded)
         {
-            if (SM.Input.Movement.Crouch.Pressed || !SM.Motor.CanStandUp())
+            if (SM.Input.Movement.Crouch.Held || !SM.Motor.CanStandUp())
                 return MovementType.Crouching;
             
             if (SM.Input.Movement.Move.sqrMagnitude > 0.01f)
