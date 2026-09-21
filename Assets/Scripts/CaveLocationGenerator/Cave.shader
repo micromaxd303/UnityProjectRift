@@ -1,0 +1,158 @@
+Shader "Custom/Triplanar"
+{
+    Properties
+    {
+        _MainTex ("Texture", 2D) = "white" {}
+        _Scale ("Texture Scale", Float) = 1.0
+        _Sharpness ("Blend Sharpness", Range(1, 16)) = 4.0
+    }
+
+    SubShader
+    {
+        Tags 
+        { 
+            "RenderType" = "Opaque" 
+            "RenderPipeline" = "UniversalPipeline"
+        }
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            CBUFFER_START(UnityPerMaterial)
+                float _Scale;
+                float _Sharpness;
+            CBUFFER_END
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 worldPos : TEXCOORD0;
+                float3 worldNormal : TEXCOORD1;
+            };
+
+            Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.worldPos = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.worldNormal = TransformObjectToWorldNormal(IN.normalOS);
+                return OUT;
+            }
+
+            half4 frag(Varyings IN) : SV_Target
+            {
+                float3 worldPosDdx = ddx(IN.worldPos);
+                float3 worldPosDdy = ddy(IN.worldPos);
+                float3 flatNormal = normalize(cross(worldPosDdy, worldPosDdx));
+
+                // Triplanar
+                float3 n = abs(flatNormal);
+                n = pow(n, _Sharpness);
+                n /= (n.x + n.y + n.z);
+
+                float3 pos = IN.worldPos * _Scale;
+
+                half4 texX = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, pos.yz);
+                half4 texY = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, pos.xz);
+                half4 texZ = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, pos.xy);
+
+                half4 color = texX * n.x + texY * n.y + texZ * n.z;
+
+                // Освещение — тоже flat normal
+                Light mainLight = GetMainLight();
+                float NdotL = saturate(dot(flatNormal, mainLight.direction));
+                float3 lighting = mainLight.color * NdotL + unity_AmbientSky.rgb;
+
+                return half4(color.rgb * lighting, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+
+            HLSLPROGRAM
+            #pragma vertex ShadowVert
+            #pragma fragment ShadowFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            float3 _LightDirection;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            float3 GetGeometricNormal(float3 worldPos)
+            {
+                return normalize(cross(ddy(worldPos), ddx(worldPos)));
+            }
+
+            Varyings ShadowVert(Attributes IN)
+            {
+                Varyings OUT;
+                float3 worldPos = TransformObjectToWorld(IN.positionOS.xyz);
+
+                // Только depth bias, без normal bias
+                float invNdotL = 1.0 - saturate(dot(
+                    TransformObjectToWorldNormal(IN.normalOS), _LightDirection));
+                worldPos += _LightDirection * 0.05;
+
+                OUT.positionCS = TransformWorldToHClip(worldPos);
+
+                #if UNITY_REVERSED_Z
+                    OUT.positionCS.z = min(OUT.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #else
+                    OUT.positionCS.z = max(OUT.positionCS.z, UNITY_NEAR_CLIP_VALUE);
+                #endif
+
+                // Дополнительный depth bias в clip space
+                OUT.positionCS.z += 0.001;
+
+                return OUT;
+            }
+
+            half4 ShadowFrag(Varyings IN) : SV_Target
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
+    }
+
+    FallBack Off
+}
