@@ -12,6 +12,7 @@ StructuredBuffer<float> VoxelData;
 AppendStructuredBuffer<Triangle> Triangles;
 
 float IsoLevel;
+float VoxelSize;
 int3 SamplesPerAxis;
 float3 ChunkOffset;
 
@@ -22,8 +23,8 @@ int IndexFromCoord(int3 p)
 
 float3 InterpolateVertex(int2 edge, int3 id, float cubeCorners[8])
 {
-    float3 p0 = float3(id + VertexOffset[edge.x]) + ChunkOffset;
-    float3 p1 = float3(id + VertexOffset[edge.y]) + ChunkOffset;
+    float3 p0 = float3(id + VertexOffset[edge.x]) * VoxelSize + ChunkOffset;
+    float3 p1 = float3(id + VertexOffset[edge.y]) * VoxelSize + ChunkOffset;
 
     float v0 = cubeCorners[edge.x];
     float v1 = cubeCorners[edge.y];

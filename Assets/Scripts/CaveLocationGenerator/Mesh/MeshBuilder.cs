@@ -43,6 +43,8 @@ public class MeshBuilder
 
             if (optimized.Triangles.Length >= 3)
                 go.AddComponent<MeshCollider>().sharedMesh = mesh;
+            
+            go.GetComponent<MeshCollider>().convex = true;
 
             result[coord] = go;
         }

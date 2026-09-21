@@ -68,6 +68,7 @@ public struct GenerateTrianglesJob : IJob
     public int3 SamplesPerAxis;
     public float3 ChunkOffset;
     public float IsoLevel;
+    public float VoxelSize;
 
     [WriteOnly] public NativeArray<Triangle> Output;
 
@@ -105,8 +106,8 @@ public struct GenerateTrianglesJob : IJob
 
     private float3 InterpolateVertex(int2 edge, int3 id, float8 corners)
     {
-        float3 p0 = (float3)(id + VertexOffset[edge.x]) + ChunkOffset;
-        float3 p1 = (float3)(id + VertexOffset[edge.y]) + ChunkOffset;
+        float3 p0 = (float3)(id + VertexOffset[edge.x]) * VoxelSize + ChunkOffset;
+        float3 p1 = (float3)(id + VertexOffset[edge.y]) * VoxelSize + ChunkOffset;
 
         float v0 = GetCornerValue(corners, edge.x);
         float v1 = GetCornerValue(corners, edge.y);
