@@ -36,7 +36,7 @@ public class MeshBuilder
 
             var go = new GameObject($"Chunk_{coord.x}_{coord.y}_{coord.z}");
             go.layer = LayerMask.NameToLayer("CaveChunk");
-            go.transform.SetParent(_parent);
+            go.transform.SetParent(_parent, false);
 
             go.AddComponent<MeshFilter>().mesh = mesh;
             go.AddComponent<MeshRenderer>().material = _material;

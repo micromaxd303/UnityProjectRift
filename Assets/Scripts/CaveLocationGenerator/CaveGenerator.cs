@@ -5,11 +5,10 @@ public class CaveGenerator : MonoBehaviour
 {
     [Header("Config")]
     [SerializeField] private MarchingCubesConfig config;
+    [SerializeField] private MitchelConfig mitchelConfig;
+    
     [SerializeField] private ComputeShader marchingCubesShader;
     [SerializeField] private Material caveMaterial;
-
-    [Header("Debug")]
-    [SerializeField] private bool drawGizmos;
     
     [Header("Culling")]
     [SerializeField] private bool enableCulling = true;
@@ -34,6 +33,11 @@ public class CaveGenerator : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.G))
         {
             Generate();
+        }
+
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            GraphBuilder.BuildGraph(config, mitchelConfig, gameObject.transform.position);
         }
     }
 

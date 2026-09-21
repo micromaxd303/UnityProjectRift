@@ -18,6 +18,8 @@ public class MarchingCubesConfig : ScriptableObject
 
     [field: SerializeField] public int RecommendationThreshold { get; private set; } = 65;
     public int TotalChunkVoxels => ChunkSize.x * ChunkSize.y * ChunkSize.z;
+
+    public Vector3 TotalWorldSize => Vector3.Scale(WorldSize, ChunkSize) * VoxelSize;
     
     public enum BackendType { Auto, ComputeShader, JobSystem, }
     public enum GraphicsAPIType { Auto, DX11, DX12, Vulkan, Metal }
