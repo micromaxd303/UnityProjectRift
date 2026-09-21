@@ -36,13 +36,15 @@ public class MeshBuilder
 
             var go = new GameObject($"Chunk_{coord.x}_{coord.y}_{coord.z}");
             go.layer = LayerMask.NameToLayer("CaveChunk");
-            go.transform.SetParent(_parent);
+            go.transform.SetParent(_parent, false);
 
             go.AddComponent<MeshFilter>().mesh = mesh;
             go.AddComponent<MeshRenderer>().material = _material;
 
             if (optimized.Triangles.Length >= 3)
                 go.AddComponent<MeshCollider>().sharedMesh = mesh;
+            
+            go.GetComponent<MeshCollider>().convex = true;
 
             result[coord] = go;
         }

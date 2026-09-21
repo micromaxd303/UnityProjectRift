@@ -44,21 +44,24 @@ public static class VoxelDebug
     /// Красный — solid, синий — empty, жёлтый — около поверхности.
     /// </summary>
     public static void DrawGizmos(
-        float[] data, 
-        Vector3Int chunkCoord, 
-        Vector3Int chunkSize, 
-        float surfaceLevel = 0f, 
+        float[] data,
+        Vector3Int chunkCoord,
+        Vector3Int chunkSize,
+        Vector3Int worldSize,
+        float voxelSize = 1f,
+        float surfaceLevel = 0f,
         float gizmoSize = 0.2f)
     {
         Vector3Int samples = chunkSize + Vector3Int.one;
-        Vector3 origin = Vector3.Scale(chunkCoord, chunkSize);
+        Vector3 centerOffset = -Vector3.Scale(worldSize, chunkSize) * (voxelSize * 0.5f);
+        Vector3 origin = Vector3.Scale(chunkCoord, chunkSize) * voxelSize + centerOffset;
 
         for (int z = 0; z < samples.z; z++)
         for (int y = 0; y < samples.y; y++)
         for (int x = 0; x < samples.x; x++)
         {
             float val = data[x + y * samples.x + z * samples.x * samples.y];
-            Vector3 pos = origin + new Vector3(x, y, z);
+            Vector3 pos = origin + new Vector3(x, y, z) * voxelSize;
 
             float diff = val - surfaceLevel;
 
@@ -69,11 +72,20 @@ public static class VoxelDebug
             else
                 Gizmos.color = new Color(0, 0, 1, 0.1f); // empty, полупрозрачный
 
-            Gizmos.DrawCube(pos, Vector3.one * gizmoSize);
+            Gizmos.DrawWireSphere(pos, 0.2f * voxelSize);
         }
     }
-    
-    
+
+    public static void DrawCube(Vector3 center, Vector3Int worldSize, Vector3Int chunkSize, float voxelSize)
+    {
+        Vector3 size = Vector3.Scale(worldSize, chunkSize) * voxelSize;
+        
+        Gizmos.color = Color.green;
+        
+        Gizmos.DrawWireCube(center, size);
+    }
+
+
     public static void LogMeshData(MeshData data, Vector3Int coord, int maxTriangles = 20)
     {
         var sb = new System.Text.StringBuilder();
@@ -145,5 +157,12 @@ public static class VoxelDebug
         string path = System.IO.Path.Combine(Application.dataPath, $"chunk_{coord.x}_{coord.y}_{coord.z}_dump.txt");
         System.IO.File.WriteAllText(path, sb.ToString());
         Debug.Log($"Dump saved: {path}");
+    }
+
+    public static void DrawPoissonDisk(Vector2 coords)
+    {
+        Gizmos.color = Color.yellow;
+        
+        Gizmos.DrawWireSphere(new Vector3(coords.x, 0, coords.y), 0.2f);
     }
 }

@@ -4,46 +4,41 @@ using UnityEngine.Rendering;
 
 public class ChunkCuller : MonoBehaviour
 {
-    [SerializeField, Range(0.05f, 0.5f)]
-    private float _occlusionInterval = 0.2f;
-    
-    [SerializeField]
-    private float _maxDistance = 200f;
-
-    [SerializeField, Range(1f, 20f)]
-    private float _frustumBuffer = 5f;
-
-    [SerializeField]
-    private LayerMask _cullingMask = ~0;
+    [SerializeField] private float _maxDistance = 200f;
+    [SerializeField, Range(1f, 20f)] private float _frustumBuffer = 5f;
+    [SerializeField, Range(0, 10)] private int _hysteresisFrames = 3;
 
     private Camera _camera;
-    private Dictionary<Vector3Int, ChunkState> _chunks = new();
-    private float _nextOcclusionUpdate;
+    private List<ChunkState> _chunks = new();
+    private Plane[] _planes = new Plane[6];
 
     private struct ChunkState
     {
         public GameObject Go;
         public MeshRenderer Renderer;
-        public bool OcclusionVisible;
+        public int InvisibleFrames;
+        public ShadowCastingMode CurrentMode;
     }
 
     public void RegisterChunks(Dictionary<Vector3Int, GameObject> chunks)
     {
         _chunks.Clear();
 
-        foreach (var (coord, go) in chunks)
+        foreach (var (_, go) in chunks)
         {
             var renderer = go.GetComponent<MeshRenderer>();
             if (renderer == null) continue;
 
-            _chunks[coord] = new ChunkState
+            renderer.enabled = true;
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+
+            _chunks.Add(new ChunkState
             {
                 Go = go,
                 Renderer = renderer,
-                OcclusionVisible = true
-            };
-
-            SetChunkVisible(renderer, true);
+                InvisibleFrames = 0,
+                CurrentMode = ShadowCastingMode.On
+            });
         }
     }
 
@@ -54,112 +49,50 @@ public class ChunkCuller : MonoBehaviour
 
     private void Update()
     {
-        if (_chunks.Count == 0)
+        if (_chunks.Count == 0 || _camera == null)
             return;
 
-        bool updateOcclusion = Time.time >= _nextOcclusionUpdate;
-        if (updateOcclusion)
-            _nextOcclusionUpdate = Time.time + _occlusionInterval;
-
         Vector3 camPos = _camera.transform.position;
-        var planes = GeometryUtility.CalculateFrustumPlanes(_camera);
+        GeometryUtility.CalculateFrustumPlanes(_camera, _planes);
 
-        for (int i = 0; i < planes.Length; i++)
-            planes[i].distance += _frustumBuffer;
+        for (int i = 0; i < _planes.Length; i++)
+            _planes[i].distance += _frustumBuffer;
 
-        var keys = new List<Vector3Int>(_chunks.Keys);
-
-        foreach (var coord in keys)
+        for (int i = 0; i < _chunks.Count; i++)
         {
-            var state = _chunks[coord];
+            var state = _chunks[i];
             if (state.Go == null) continue;
 
             Bounds bounds = state.Renderer.bounds;
+            float dist = Vector3.Distance(camPos, bounds.ClosestPoint(camPos));
 
-            if (Vector3.Distance(camPos, bounds.center) > _maxDistance)
+            bool inFrustum = dist <= _maxDistance
+                             && GeometryUtility.TestPlanesAABB(_planes, bounds);
+
+            if (inFrustum)
             {
-                SetChunkVisible(state.Renderer, false);
-                continue;
-            }
-
-            if (!GeometryUtility.TestPlanesAABB(planes, bounds))
-            {
-                SetChunkVisible(state.Renderer, false);
-                continue;
-            }
-
-            if (updateOcclusion)
-            {
-                state.OcclusionVisible = IsChunkVisible(camPos, bounds, state.Go);
-                _chunks[coord] = state;
-            }
-
-            SetChunkVisible(state.Renderer, state.OcclusionVisible);
-        }
-    }
-
-    private void SetChunkVisible(MeshRenderer renderer, bool visible)
-    {
-        if (visible)
-        {
-            renderer.enabled = true;
-            renderer.shadowCastingMode = ShadowCastingMode.On;
-        }
-        else
-        {
-            renderer.enabled = true;
-            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
-        }
-    }
-
-    private bool IsChunkVisible(Vector3 camPos, Bounds bounds, GameObject self)
-    {
-        Vector3[] testPoints = GetTestPoints(bounds);
-
-        for (int i = 0; i < testPoints.Length; i++)
-        {
-            Vector3 dir = testPoints[i] - camPos;
-            float dist = dir.magnitude;
-
-            if (dist < 0.1f)
-                return true;
-
-            if (Physics.Raycast(camPos, dir.normalized, out RaycastHit hit, dist, _cullingMask))
-            {
-                if (hit.collider.gameObject == self)
-                    return true;
+                state.InvisibleFrames = 0;
+                ApplyMode(ref state, ShadowCastingMode.On);
             }
             else
             {
-                return true;
-            }
-        }
+                state.InvisibleFrames++;
 
-        return false;
+                if (state.InvisibleFrames > _hysteresisFrames)
+                    ApplyMode(ref state, ShadowCastingMode.ShadowsOnly);
+            }
+
+            _chunks[i] = state;
+        }
     }
 
-    private Vector3[] GetTestPoints(Bounds b)
+    private void ApplyMode(ref ChunkState state, ShadowCastingMode mode)
     {
-        Vector3 c = b.center;
-        Vector3 e = b.extents;
+        if (state.CurrentMode == mode)
+            return;
 
-        return new[]
-        {
-            c,
-            c + Vector3.up * e.y,
-            c - Vector3.up * e.y,
-            c + Vector3.right * e.x,
-            c - Vector3.right * e.x,
-            c + Vector3.forward * e.z,
-            c - Vector3.forward * e.z,
-            c + new Vector3(e.x, e.y, e.z),
-            c + new Vector3(-e.x, e.y, e.z),
-            c + new Vector3(e.x, -e.y, e.z),
-            c + new Vector3(-e.x, -e.y, e.z),
-            c + new Vector3(e.x, e.y, -e.z),
-            c + new Vector3(-e.x, e.y, -e.z),
-            c + new Vector3(e.x, -e.y, -e.z),
-            c + new Vector3(-e.x, -e.y, -e.z)
-        };
+        state.Renderer.enabled = true;
+        state.Renderer.shadowCastingMode = mode;
+        state.CurrentMode = mode;
     }
 }
