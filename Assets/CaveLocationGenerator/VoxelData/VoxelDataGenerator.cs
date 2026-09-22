@@ -37,6 +37,10 @@ public class VoxelDataGenerator : IVoxelDataProvider
             {
                 density = -100f;
             }
+            else if (x == 1 && y == 1)
+            {
+                density = 100f;
+            }
             else
             {
                 float dist = Vector3.Distance(worldPos, _worldCenter);

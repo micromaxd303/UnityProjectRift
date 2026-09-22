@@ -240,66 +240,6 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
---- !u!1 &459812486
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 459812488}
-  - component: {fileID: 459812487}
-  m_Layer: 0
-  m_Name: test
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &459812487
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459812486}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb3c5b9a15502ff40853d3d6c28df6b5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  settings:
-    nodeCount: 3
-    regionCenter: {x: 0, y: 0}
-    regionSize: {x: 10, y: 10}
-    rMin: 7.03
-    candidatesPerPoint: 20
-    growthPerPoint: 1
-    maxExtraBatches: 6
-    heightAmplitude: 16.95
-    noiseScale: 2.14
-    noiseOffset: {x: 0, y: 0}
-  seed: 1
-  autoRegionFromSpacing: 0
-  targetSpacing: 8
-  entrance: {x: -15, y: 0, z: -15}
-  objective: {x: 9.1, y: 0, z: 15}
---- !u!4 &459812488
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459812486}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -47, y: 11, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &539114859
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -436,7 +376,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f2d32a8dfa0e3394db79cb8b745e975f, type: 2}
+  - {fileID: 2100000, guid: 8aa0586ed6b2358429bf8b9d6a60d49b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -476,7 +416,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -5, z: 0}
-  m_LocalScale: {x: 100, y: 1, z: 100}
+  m_LocalScale: {x: 10000, y: 1, z: 10000}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -600,7 +540,6 @@ GameObject:
   - component: {fileID: 1778453239}
   - component: {fileID: 1778453238}
   - component: {fileID: 1778453240}
-  - component: {fileID: 1778453241}
   m_Layer: 6
   m_Name: Cave
   m_TagString: Untagged
@@ -621,9 +560,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 1e7f524a64144144dbbc1362a60a3589, type: 2}
-  mitchelConfig: {fileID: 11400000, guid: 6f46436e4620702488dd6791cd7001bd, type: 2}
+  MBconfig: {fileID: 11400000, guid: 64b5243fc119b604ba28bc726ff20b5c, type: 2}
   marchingCubesShader: {fileID: 7200000, guid: 9a00f59408fa1f548b467c83635d2ea2, type: 3}
-  caveMaterial: {fileID: 2100000, guid: 15b12999b3e1fd94da05e0e68a042ee6, type: 2}
   enableCulling: 0
 --- !u!4 &1778453239
 Transform:
@@ -660,7 +598,7 @@ MonoBehaviour:
     drawPoints: 0
     drawSurfaceCrossings: 0
     matchBackendCentering: 1
-    applyVoxelSize: 0
+    applyVoxelSize: 1
     slice: 0
     sliceIndex: 0
     nearSurfaceOnly: 0
@@ -678,40 +616,6 @@ MonoBehaviour:
     chunkBoundsColor: {r: 1, g: 1, b: 1, a: 0.22}
     crossingColor: {r: 0.2, g: 1, b: 0.4, a: 1}
     maxPointsToDraw: 200000
---- !u!114 &1778453241
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1778453237}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1259763b314166e4aadf8e9888ef091d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 1e7f524a64144144dbbc1362a60a3589, type: 2}
-  onlyWhenSelected: 0
-  options:
-    matchBackendCentering: 0
-    applyVoxelSize: 0
-    drawNodes: 1
-    nodeRadius: 1
-    drawGroundTick: 1
-    tickHeight: 20
-    highlightAnchors: 1
-    anchorRingColor: {r: 1, g: 0, b: 0.7742038, a: 1}
-    anchorRingScale: 1.8
-    drawLabels: 1
-    labelIndex: 1
-    labelRole: 1
-    labelMaxDistance: 60
-    entrance: {r: 0.3, g: 1, b: 0.3, a: 1}
-    objective: {r: 1, g: 0.85, b: 0.1, a: 1}
-    sideMission: {r: 0.3, g: 0.8, b: 1, a: 1}
-    loot: {r: 1, g: 0.5, b: 0.1, a: 1}
-    exit: {r: 1, g: 0.25, b: 0.25, a: 1}
-    empty: {r: 0.6, g: 0.6, b: 0.6, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -721,4 +625,3 @@ SceneRoots:
   - {fileID: 702997535}
   - {fileID: 539114859}
   - {fileID: 948687507}
-  - {fileID: 459812488}

@@ -143,10 +143,14 @@ public static class MarchingCubesDebug
         var ws = config.WorldSize;
         long chunks = (long)ws.x * ws.y * ws.z;
         Handles.color = o.worldBoundsColor;
-        Handles.Label(m.MultiplyPoint3x4(new Vector3(0f, sizeVox.y + 1f, 0f)),
-            $"World {ws.x}x{ws.y}x{ws.z} чанков ({chunks})  |  " +
-            $"Chunk {config.ChunkSize.x}x{config.ChunkSize.y}x{config.ChunkSize.z}  |  " +
-            $"VoxelSize {config.VoxelSize} (apply={o.applyVoxelSize})");
+        Handles.Label(
+            m.MultiplyPoint3x4(new Vector3(0f, sizeVox.y + 1f, 0f)),
+            $"World {ws.x}x{ws.y}x{ws.z} ({chunks} chunks)\n" +
+            $"Chunk {config.ChunkSize.x}x{config.ChunkSize.y}x{config.ChunkSize.z}\n" +
+            $"Voxel {config.VoxelSize} | Apply: {o.applyVoxelSize}"
+        );
+
+
 #endif
     }
 
