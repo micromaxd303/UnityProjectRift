@@ -45,28 +45,23 @@ public class WeaponRaycast : Weapon
                 IDamageable damageable = hit.collider.GetComponent<IDamageable>();
                 if (damageable != null)
                 {
-                    bool isCriticalDamage = Random.value < weaponConfig.chanceCriticalDamage;
-
-                    float crit = weaponConfig.BaseDamage * weaponConfig.criticalDamage * 0.01f; 
-
-                    int statusUnits = (int)((float)weaponConfig.statusUnits * ammoTypeConfig.StatusMultiplier);
-
+                    CriticalDamage criticalDamage = new CriticalDamage(
+                        weaponConfig.criticalDamage,
+                        weaponConfig.chanceCriticalDamage,
+                        Random.value < weaponConfig.chanceCriticalDamage
+                        );
                     DamagePacket damagePacket = new DamagePacket(
-                        ammoTypeConfig.DamageDistribution, 
-                        crit, 
-                        weaponConfig.chanceCriticalDamage, 
-                        isCriticalDamage, 
-                        statusUnits, 
-                        ammoTypeConfig.ProjectileType);
-
-                    damagePacket.Multiply(weaponConfig.BaseDamage);
-
-                    DamageContext damageContext = new DamageContext(damagePacket)
-                    {
-                        Source = hit.collider.gameObject,
-                        hitPoint = hit.point,
-                        hitNormal = hit.normal
-                    };
+                        ammoTypeConfig.damageValues.Multiply(weaponConfig.baseDamage),
+                        criticalDamage, 
+                        ammoTypeConfig.projectileType,
+                        (int)((float)weaponConfig.statusUnits * ammoTypeConfig.statusMultiplier)
+                        );
+                    DamageContext damageContext = new DamageContext(
+                        damagePacket,
+                        hit.collider.gameObject,
+                        hit.point,
+                        hit.normal
+                    );
 
                     damageable.TakeDamage(damageContext);
                 }

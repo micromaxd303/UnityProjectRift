@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   name: "\u041F\u0438\u0441\u0442\u043E\u043B\u0435\u0442"
   description: 
-  BaseDamage: 10
-  accuracy: 1
+  baseDamage: 20
+  dispersion: 0
   distance: 500
-  criticalDamage: 25
+  criticalDamage: 0.5
   chanceCriticalDamage: 0.25
   statusUnits: 1
   countBulletInOneShot: 1
@@ -26,4 +26,4 @@ MonoBehaviour:
   rechargeTime: 1.5
   maxBulletCountInWeapon: 1500
   maxBulletCount: 15
-  AutoShooting: 0
+  autoShooting: 0

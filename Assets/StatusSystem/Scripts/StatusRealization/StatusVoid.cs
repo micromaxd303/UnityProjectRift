@@ -26,29 +26,25 @@ public class StatusVoid : Status
         isActive = false;
     }
 
-    public override DamageContext OverrideDamage(DamageContext context)
+    public override DamageContext OverrideDamage(in DamageContext context)
     {
         if (isActive)
         {
-            DamagePacket damagePacket = context.Damage;
-            float baseDamage = 0f;
-            for (int i = 0; i < damagePacket.values.Length; i++)
-            {
-                baseDamage += damagePacket.values[i];
-            }
-            DamagePacket packet = new(
-                damagePacket.values,
-                baseDamage * ((damagePacket.CriticalDamage / baseDamage) + CriticalDamageAdders * 0.01f),
-                damagePacket.CriticalDamageChance + CriticalDamageChanceAdders,
-                Random.value < (damagePacket.CriticalDamageChance + CriticalDamageChanceAdders),
-                damagePacket.StatusBuildup,
-                damagePacket.damageType);
-            DamageContext damageContext = new DamageContext(packet)
-            {
-                Source = context.Source,
-                hitNormal = context.hitNormal,
-                hitPoint = context.hitPoint,
-            };
+            DamageContext damageContext = new DamageContext(
+                new DamagePacket(
+                    context.Damage.damageValues,
+                    new CriticalDamage(
+                        context.Damage.criticalDamage.value + CriticalDamageAdders,
+                        Mathf.Clamp01(context.Damage.criticalDamage.chance + CriticalDamageChanceAdders),
+                        Random.value < (context.Damage.criticalDamage.chance + CriticalDamageChanceAdders)
+                        ),
+                    context.Damage.damageType,
+                    context.Damage.statusBuildup
+                ),
+                context.Source,
+                context.hitPoint,
+                context.hitNormal
+                );
             return damageContext;
         }
         return context;

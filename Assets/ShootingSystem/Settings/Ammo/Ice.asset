@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27a6e9b96b23a6545943a448a6b6b460, type: 3}
   m_Name: Ice
   m_EditorClassIdentifier: 
-  ProjectileType: 3
-  DamageDistribution:
-  - 0
-  - 0
-  - 0
-  - 1
-  - 0
-  - 0
-  StatusMultiplier: 1
+  projectileType: 3
+  normalDamage: 0
+  explosiveDamage: 0
+  acidDamage: 0
+  iceDamage: 1
+  electricDamage: 0
+  voidDamage: 0
+  statusMultiplier: 1

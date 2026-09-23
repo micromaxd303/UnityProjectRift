@@ -9,7 +9,7 @@ public class ShootingController : MonoBehaviour
     {
         if (weapon)
         {
-            if (weapon.weaponConfig.AutoShooting)
+            if (weapon.weaponConfig.autoShooting)
             {
                 if (GameServices.Input.Combat.Fire.Held) weapon.Shoot();
             }

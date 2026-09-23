@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class WeaponInfoUI : MonoBehaviour
@@ -25,11 +24,11 @@ public class WeaponInfoUI : MonoBehaviour
             weaponNameText.text = shootingController.weapon.weaponConfig.name;
             weaponBulletCountText.text = shootingController.weapon.bulletCount.ToString() + "/" + shootingController.weapon.weaponConfig.maxBulletCount.ToString();
             weaponBulletCountBar.fillAmount = (float)shootingController.weapon.bulletCount / shootingController.weapon.weaponConfig.maxBulletCount;
-            weaponDamageText.text = shootingController.weapon.weaponConfig.BaseDamage.ToString();
+            weaponDamageText.text = shootingController.weapon.weaponConfig.baseDamage.ToString();
             weaponCriticalDamageText.text = shootingController.weapon.weaponConfig.criticalDamage.ToString();
             weaponChanceCriticalDamageText.text = shootingController.weapon.weaponConfig.chanceCriticalDamage.ToString();
             weaponStatusUnitsText.text = shootingController.weapon.weaponConfig.statusUnits.ToString();
-            weaponAutoShootingText.text = shootingController.weapon.weaponConfig.AutoShooting ? "Yes" : "No";
+            weaponAutoShootingText.text = shootingController.weapon.weaponConfig.autoShooting ? "Yes" : "No";
 
             weaponReloadBar.fillAmount = shootingController.weapon.reloadProgress;
             weaponShootBar.fillAmount = shootingController.weapon.shootProgress;

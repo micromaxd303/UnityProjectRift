@@ -3,8 +3,7 @@ using UnityEngine;
 [AddComponentMenu("Shooting system/Damage Controller")]
 public class DamageController : MonoBehaviour, IDamageable
 {
-    [Tooltip("Массив сопротивлений к урону в порядке DamageType")]
-    public float[] ResistMultiplers;
+    public DamageResists resists;
 
     [Tooltip("Максимальное значение HP, -1 для бессмертия")]
     public float MaxHealthPoint;
@@ -24,15 +23,19 @@ public class DamageController : MonoBehaviour, IDamageable
         if (HpBar) HpBar.MaxHealthPoint = MaxHealthPoint;
     }
 
-    public void TakeDamage(DamageContext damage)
+    public void TakeDamage(in DamageContext damage)
     {
-        damage.Damage.ApplyResist(ResistMultiplers);
+        DamageContext newDamage = new DamageContext(
+            damage.Damage.AddResist(resists), 
+            damage.Source, 
+            damage.hitPoint, 
+            damage.hitNormal
+            );
         if (MaxHealthPoint > 0)
         {
-            HealthPoint -= damage.Damage.Total;
+            HealthPoint -= newDamage.Damage.Total;
         }
-        if (HpBar) HpBar.SetValue(damage, HealthPoint);
-        if (DamagePopupCreator) DamagePopupCreator.CreatePopup(damage);
-        //Debug.Log($"Получен урон: {damage.Damage.Total.ToString()} от объекта {damage.Source.name}, критический урон {(damage.Damage.isCriticalDamage ? damage.Damage.CriticalDamage.ToString() : "нет")} единиц статуса: {damage.Damage.StatusBuildup.ToString()}");
+        if (HpBar) HpBar.SetValue(newDamage, HealthPoint);
+        if (DamagePopupCreator) DamagePopupCreator.CreatePopup(newDamage);
     }
 }

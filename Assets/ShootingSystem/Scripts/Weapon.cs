@@ -5,11 +5,11 @@ public abstract class Weapon : MonoBehaviour
     public AmmoTypeConfig ammoTypeConfig;
     public WeaponConfig weaponConfig;
 
-    public int bulletCount;
+    [HideInInspector] public int bulletCount;
 
-    public float reloadProgress = 1f;
-    public float cooldownProgress = 1f;
-    public float shootProgress = 1f;
+    [HideInInspector] public float reloadProgress = 1f;
+    [HideInInspector] public float cooldownProgress = 1f;
+    [HideInInspector] public float shootProgress = 1f;
 
     public void ChangeWeapon(WeaponConfig newWeaponConfig)
     {

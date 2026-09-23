@@ -33,19 +33,22 @@ public class StatusController : MonoBehaviour, IDamageable
         }
     }
 
-    public void TakeDamage(DamageContext context)
+    public void TakeDamage(in DamageContext context)
     {
         int index = (byte)context.Damage.damageType;
         if (index >= statusInfo.Length) return;
-        statusInfo[index].AddUnits(context.Damage.StatusBuildup);
+        statusInfo[index].AddUnits(context.Damage.statusBuildup);
+
+        DamageContext newContext = context;
+
         for (int i = 0; i < statusInfo.Length; i++)
         {
             if (statusInfo[i].mode == StatusInfo.StatusMode.Active)
             {
-                context = statusInfo[i].status.OverrideDamage(context);
+                newContext = new DamageContext(statusInfo[i].status.OverrideDamage(newContext));
             }
         }
-        if (damageOutput != null) damageOutput.TakeDamage(context);
+        if (damageOutput != null) damageOutput.TakeDamage(newContext);
     }
 
     private void Update()

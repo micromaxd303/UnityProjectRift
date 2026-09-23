@@ -11,26 +11,29 @@ public class DamageTransmitter : MonoBehaviour, IDamageable
     [SerializeField, Tooltip("Список компонентов в которые нужно передать изменённый урон (скрипт должен реализовать IDamageable)")]
     private List<MonoBehaviour> DamageableObjects;
 
-    public void TakeDamage(DamageContext context)
+    public void TakeDamage(in DamageContext context)
     {
+        DamageContext damageContext = 
+            new DamageContext(
+                context.Damage.Multiply(multiplier), context.Source, context.hitPoint, context.hitNormal
+            );
+
         for (int i = 0; i < DamageableObjects.Count; ++i)
         {
-            if (DamageableObjects[i] == null)
+            MonoBehaviour component = DamageableObjects[i];
+            if (component == null)
             {
 #if UNITY_EDITOR
                 Debug.LogError("Компонент равен null");
 #endif
                 continue;
             }
-            IDamageable damageable = DamageableObjects[i] as IDamageable;
-            if (damageable != null)
+            if (component is IDamageable damageable)
             {
-                DamageContext damageContext = new(context);
-                damageContext.Damage.Multiply(multiplier);
                 damageable.TakeDamage(damageContext);
             }
 #if UNITY_EDITOR
-            else Debug.LogError("Компонент " + DamageableObjects[i].name + " не реализует интерфейс IDamageable");
+            else Debug.LogError($"Компонент {component.name} объекта {component.gameObject.name} не реализует интерфейс IDamageable");
 #endif
         }
     }

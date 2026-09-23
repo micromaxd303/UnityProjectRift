@@ -6,7 +6,7 @@ public class StatusInfection : Status
     [Tooltip("Cooldown нанесения урона")]
     public float CooldownTime = 1f;
 
-    [Tooltip("Наносимый урон: процент от максимального HP врага (от 0 до 1)")]
+    [Tooltip("Наносимый урон: процент от максимального HP врага"), Range(0f, 1f)]
     public float ProcentDamage = 0.1f;
 
     [SerializeField]
@@ -32,9 +32,18 @@ public class StatusInfection : Status
         {
             if (damageOutput != null)
             {
-                DamagePacket packet = new DamagePacket(new float[] { MaxHealthPoint * ProcentDamage, 0f, 0f, 0f, 0f, 0f}, 0f, 0f, false, 0, DamageType.Normal);
-                DamageContext damage = new DamageContext(packet);
-                damage.Source = gameObject;
+                DamagePacket packet = new DamagePacket(
+                    new DamageValues(ProcentDamage * MaxHealthPoint, 0f, 0f, 0f, 0f, 0f),
+                    new CriticalDamage(0f, 0f, false),
+                    DamageType.Normal, 
+                    0
+                    );
+                DamageContext damage = new DamageContext(
+                    packet,
+                    gameObject,
+                    Vector3.zero,
+                    Vector3.zero
+                    );
                 damageOutput.TakeDamage(damage);
             }
             Timer = 0f;

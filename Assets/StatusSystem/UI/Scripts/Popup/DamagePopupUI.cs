@@ -21,8 +21,8 @@ public class DamagePopupUI : MonoBehaviour
     public void SetValue(DamageContext damage)
     {
         tmp.text = damage.Damage.Total.ToString();
-        tmp.fontStyle = damage.Damage.isCriticalDamage ? FontStyles.Bold : FontStyles.Normal;
-        if (damage.Damage.isCriticalDamage)
+        tmp.fontStyle = damage.Damage.criticalDamage.isCritical ? FontStyles.Bold : FontStyles.Normal;
+        if (damage.Damage.criticalDamage.isCritical)
         {
             tmp.color = criticalDamage;
         }

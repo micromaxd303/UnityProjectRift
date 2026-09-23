@@ -90,7 +90,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   statusConfig: {fileID: 11400000, guid: 095d43c847efe164496be641fba9e7c7, type: 2}
-  CriticalDamageAdders: 50
+  CriticalDamageAdders: 20
   CriticalDamageChanceAdders: 15
 --- !u!1 &3884630435501332375
 GameObject:
@@ -194,13 +194,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   statusConfig: {fileID: 11400000, guid: 3fc03b19b4bb56f4cbb04b2b85c7e53c, type: 2}
-  damageAdders:
-  - -0.2
-  - -0.2
-  - -0.2
-  - -0.2
-  - -0.2
-  - -0.2
+  addResist:
+    noramlResist: 0
+    explosiveResist: 0
+    acidResist: 0
+    iceResist: 0
+    electricResist: 0
+    voidResist: 0
   controller: {fileID: 0}
 --- !u!1 &7144608725748440154
 GameObject:

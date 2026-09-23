@@ -4,11 +4,30 @@ using UnityEngine;
 public class AmmoTypeConfig : ScriptableObject
 {
     [Tooltip("Тип пули")]
-    public DamageType ProjectileType;
+    public DamageType projectileType;
 
-    [Tooltip("Коэффициенты распределения урона (сумма должна быть равна 1)")]
-    public float[] DamageDistribution;
+    [Header("Распределение урона")]
+    [SerializeField, Range(0f, 1f)] private float normalDamage;
+    [SerializeField, Range(0f, 1f)] private float explosiveDamage;
+    [SerializeField, Range(0f, 1f)] private float acidDamage;
+    [SerializeField, Range(0f, 1f)] private float iceDamage;
+    [SerializeField, Range(0f, 1f)] private float electricDamage;
+    [SerializeField, Range(0f, 1f)] private float voidDamage;
 
     [Tooltip("Множитель единиц статуса")]
-    public float StatusMultiplier = 1f;
+    public float statusMultiplier = 1f;
+
+    public DamageValues damageValues;
+
+    private void OnEnable()
+    {
+        damageValues = new DamageValues(
+            normalDamage, 
+            explosiveDamage, 
+            acidDamage, 
+            iceDamage, 
+            electricDamage, 
+            voidDamage
+            );
+    }
 }

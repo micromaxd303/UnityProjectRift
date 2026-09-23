@@ -11,5 +11,5 @@ public abstract class Status : MonoBehaviour
     public abstract void Tick();
     public abstract void OnExit();
 
-    public virtual DamageContext OverrideDamage(DamageContext context) { return context; }
+    public virtual DamageContext OverrideDamage(in DamageContext context) { return context; }
 }

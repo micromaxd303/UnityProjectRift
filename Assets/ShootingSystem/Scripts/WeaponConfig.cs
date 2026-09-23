@@ -10,7 +10,7 @@ public class WeaponConfig : ScriptableObject
     public string description;
 
     [Tooltip("Базовый урон оружия")]
-    public float BaseDamage;
+    public float baseDamage;
 
     [Tooltip("Разброс")]
     public float dispersion;
@@ -18,7 +18,7 @@ public class WeaponConfig : ScriptableObject
     [Tooltip("Максимальная дальность стрельбы")]
     public float distance;
 
-    [Tooltip("Критический урон (в %)")]
+    [Tooltip("Критический урон (в % от базового урона)"), Range(0f, 1f)]
     public float criticalDamage;
 
     [Tooltip("Шанс критического урона"), Range(0f, 1f)]
@@ -46,5 +46,5 @@ public class WeaponConfig : ScriptableObject
     public int maxBulletCount;
 
     [Tooltip("Авто стрельба по удержании кнопки")]
-    public bool AutoShooting;
+    public bool autoShooting;
 }
