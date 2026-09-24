@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 244ffab833ca4eb40ba1246bde14e0ea, type: 3}
+  m_Name: InfectionStatus
+  m_EditorClassIdentifier: 
+  LifeTime: 5
+  CooldownRecharge: 5
+  CooldownStatusUnits: 3
+  RequiredStatusUnits: 5
+  color: {r: 0.29463124, g: 1, b: 0, a: 1}
+  icon: {fileID: 716013735, guid: 37c2def110fa5094a8ffbf786db8aebc, type: 3}
