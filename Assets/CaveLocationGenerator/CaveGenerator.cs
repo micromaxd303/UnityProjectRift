@@ -7,7 +7,7 @@ public class CaveGenerator : MonoBehaviour
     [Header("Config")]
     [SerializeField] private MarchingCubesConfig config;
     [SerializeField] private MeshBuilderConfig MBconfig;
-    //[SerializeField] private MitchelConfig mitchelConfig;
+    [SerializeField] private MitchelConfig mitchelConfig;
 
     [SerializeField] private ComputeShader marchingCubesShader;
 
@@ -53,10 +53,10 @@ public class CaveGenerator : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.G))
             _pending |= SettingsChange.Extract;
 
-        /*if (Input.GetKeyDown(KeyCode.H))
+        if (Input.GetKeyDown(KeyCode.H))
         {
             GraphBuilder.BuildGraph(config, mitchelConfig, gameObject.transform.position);
-        }*/
+        }
 
         ProcessPending();
     }
