@@ -90,7 +90,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   statusConfig: {fileID: 11400000, guid: 095d43c847efe164496be641fba9e7c7, type: 2}
-  CriticalDamageAdders: 20
+  CriticalDamageAdders: 0.1
   CriticalDamageChanceAdders: 15
 --- !u!1 &3884630435501332375
 GameObject:
