@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: af53a15a9c4637649b1c14559720d967, type: 3}
-  m_Name: test
+  m_Name: MarchingCubesConfig
   m_EditorClassIdentifier: 
   <WorldSize>k__BackingField: {x: 5, y: 3, z: 5}
   <ChunkSize>k__BackingField: {x: 8, y: 8, z: 8}

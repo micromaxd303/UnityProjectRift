@@ -302,7 +302,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6100262870540472245, guid: 4f4fbb0cf2bede841a4a2e9cbb0b35e0, type: 3}
       propertyPath: m_Name
-      value: PlayerPrefab
+      value: MovableCharacter
       objectReference: {fileID: 0}
     - target: {fileID: 7235230718970266558, guid: 4f4fbb0cf2bede841a4a2e9cbb0b35e0, type: 3}
       propertyPath: config
