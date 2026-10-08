@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93b79a21c3bfcf54998feb58150de1b7, type: 3}
+  m_Name: TestConfig
+  m_EditorClassIdentifier: 
+  mitchelSamplerSettings:
+    desiredNodesCount: 18
+    sampleCount: 10
+    sampleGrowth: 1
+    heightAmplitude: 15
+    noiseScale: 10
+  caveGraphSettings:
+    maxAttempts: 20
+    maxTunnelSlope: 36
+    slopePenalty: 2
+    maxDropHeight: 8
+    crawlChance: 0.25
+    dropChance: 0.5
+    minLoopRatio: 1.6
+    loopsFew: 0.05
+    loopsSome: 0.15
+    loopsMany: 0.3
+    loopsAny: 0.2
+    smallRadius: {x: 16, y: 20}
+    mediumRadius: {x: 21, y: 28}
+    largeRadius: {x: 29, y: 37}
+    tunnelWinding: 1.3
+    travelEfficiency: 0.5
+    fightSecondsPerObjective: 45
+    crystalsRequired: 12
+    carryLimit: 4
+    defenseSecondsPerPlatform: 60
+    arenaSeconds: 180
+    rejectOnDuration: 0
+  movement: {fileID: 11400000, guid: 38502f78d0fa655429ef69be7b6c1987, type: 2}

@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1241dc544a089af45b5f5d107eb14bc0, type: 3}
   m_Name: MeshBuilderConfig
   m_EditorClassIdentifier: 
-  isoLevel: 0
   meshMode: 1
   weldThreshold: 0.001
   smoothIterations: 3
   smoothStrength: 0.168
-  material: {fileID: 2100000, guid: 15b12999b3e1fd94da05e0e68a042ee6, type: 2}
+  material: {fileID: 2100000, guid: 80762bf1be4a9f049819bb11af763f1f, type: 2}
   chunkLayer: CaveChunk
   generateColliders: 1
   liveTuning: 0

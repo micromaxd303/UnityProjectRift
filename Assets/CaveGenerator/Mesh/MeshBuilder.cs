@@ -11,6 +11,9 @@ public sealed class MeshBuilder : IDisposable
     private readonly Dictionary<Vector3Int, Chunk> _chunks = new();
     private readonly List<Vector3Int> _stale = new();
     private int _layer;
+
+    /// <summary>Раскраска вершин (цвета штампов). null — меш без vertex color.</summary>
+    public IVertexPainter Painter { get; set; }
     
 
     private sealed class Chunk
@@ -157,6 +160,10 @@ public sealed class MeshBuilder : IDisposable
         mesh.SetVertices(data.Vertices);
         mesh.SetTriangles(data.Triangles, 0);
         mesh.RecalculateNormals(); // Raw -> плоские нормали, Smooth -> гладкие
+
+        // Красим после сглаживания: веса считаются по финальным позициям вершин
+        if (Painter != null)
+            mesh.SetColors(Painter.Paint(data.Vertices, mesh.bounds));
 
         UpdateCollider(c); // коллайдер печётся ДО выгрузки CPU-данных
 

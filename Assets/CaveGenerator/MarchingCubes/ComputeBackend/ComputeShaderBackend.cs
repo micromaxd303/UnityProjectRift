@@ -66,11 +66,16 @@ public class ComputeShaderBackend : IMarchingCubesBackend
             Mathf.CeilToInt(_samplesPerAxis.z / 8f)
         );
 
+        // Чанки из сплошного камня не содержат поверхности — их не считаем
+        var sparse = voxelDataProvider as ISparseVoxelDataProvider;
+
         for (int x = 0; x < _config.WorldSize.x; x++)
         for (int y = 0; y < _config.WorldSize.y; y++)
         for (int z = 0; z < _config.WorldSize.z; z++)
         {
             var coord = new Vector3Int(x, y, z);
+            if (sparse != null && sparse.IsSolidChunk(coord))
+                continue;
 
             float[] voxels = voxelDataProvider.Generate(coord);
             _voxelBuffer.SetData(voxels);

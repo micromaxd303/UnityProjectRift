@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 306698885366204718}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -2.6999998, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -317,7 +317,7 @@ MonoBehaviour:
       Enabled: 1
       Input:
         InputAction: {fileID: -1287237059385379866, guid: 68dd5590333b12e4bb278d4d69e8fdd8, type: 3}
-        Gain: 0.2
+        Gain: 0.1
         LegacyInput: 
         LegacyGain: 1
         CancelDeltaTime: 1
@@ -330,7 +330,7 @@ MonoBehaviour:
       Enabled: 1
       Input:
         InputAction: {fileID: -1287237059385379866, guid: 68dd5590333b12e4bb278d4d69e8fdd8, type: 3}
-        Gain: -0.2
+        Gain: -0.1
         LegacyInput: 
         LegacyGain: 1
         CancelDeltaTime: 1
@@ -458,9 +458,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stateMachine: {fileID: 2346354303238530289}
   motor: {fileID: 7235230718970266558}
-  inputManager: {fileID: 0}
   toggleKey: 94
   cycleModeKey: 95
+  toggleInputModeKey: 96
 --- !u!1 &6100262870540472245
 GameObject:
   m_ObjectHideFlags: 0
@@ -471,7 +471,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1012504441479771845}
   m_Layer: 0
-  m_Name: PlayerPrefab
+  m_Name: MovableCharacter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

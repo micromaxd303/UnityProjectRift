@@ -31,6 +31,10 @@ public class JobSystemBackend : IMarchingCubesBackend
         for (int z = 0; z < _config.WorldSize.z; z++)
             allCoords.Add(new Vector3Int(x, y, z));
 
+        // Чанки из сплошного камня не содержат поверхности — их не считаем
+        if (voxelDataProvider is ISparseVoxelDataProvider sparse)
+            allCoords.RemoveAll(sparse.IsSolidChunk);
+
         int chunkCount = allCoords.Count;
 
         // Подготовка воксельных данных
@@ -153,4 +157,4 @@ public class JobSystemBackend : IMarchingCubesBackend
     {
         MarchingCubesTables.DisposeAll();
     }
-}
+}
