@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using CaveGraphBuilder;
 using UnityEngine;
 
 public class CaveGenerator : MonoBehaviour
 {
     [Header("Config")]
     [SerializeField] private MarchingCubesConfig config;
+    [SerializeField] private GraphBuilderConfig graphBuilderConfig;
     [SerializeField] private MeshBuilderConfig MBconfig;
-    //[SerializeField] private MitchelConfig mitchelConfig;
 
     [SerializeField] private ComputeShader marchingCubesShader;
 
@@ -20,6 +21,9 @@ public class CaveGenerator : MonoBehaviour
     private MeshBuilder _meshBuilder;
     private Dictionary<Vector3Int, GameObject> _chunkObjects = new();
     private SettingsChange _pending;
+    
+    
+    private List<Vector3> _nodes;
     
     private void Awake()
     {
@@ -45,7 +49,6 @@ public class CaveGenerator : MonoBehaviour
         _meshBuilder?.Dispose();
         _meshBuilder = null;
     }
-
     private void OnSettingsChanged(SettingsChange change) => _pending |= change;
 
     private void Update()
@@ -57,10 +60,26 @@ public class CaveGenerator : MonoBehaviour
         {
             GraphBuilder.BuildGraph(config, mitchelConfig, gameObject.transform.position);
         }*/
+        
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            GenerateGraph();
+        }
 
         ProcessPending();
     }
-
+    
+    private void GenerateGraph()
+    {
+        MitchelSampler nodePositionGenerator = new MitchelSampler(graphBuilderConfig.mitchelSamplerSettings, 1);
+        _nodes = nodePositionGenerator.GenerateNode(GetBorderDelta());
+    }
+    
+    private Vector2 GetBorderDelta() =>
+        new Vector2(
+            config.WorldSize.x * config.ChunkSize.x,
+            config.WorldSize.z * config.ChunkSize.z) * config.VoxelSize / 2 - new Vector2(15f, 15f);
+    
     // Вся тяжёлая работа - здесь, а не в обработчике события
     // (он может прийти из OnValidate, где создавать/удалять объекты нельзя).
     private void ProcessPending()
@@ -139,5 +158,33 @@ public class CaveGenerator : MonoBehaviour
             return new ComputeShaderBackend(marchingCubesShader);
 
         return new JobSystemBackend();
+    }
+    
+    private void OnDrawGizmosSelected()
+    {
+        if (config == null || graphBuilderConfig == null) return;
+
+        Vector2 border = GetBorderDelta();
+        float amp = graphBuilderConfig.mitchelSamplerSettings.heightAmplitude;
+
+        Gizmos.matrix = transform.localToWorldMatrix;
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireCube(Vector3.zero, new Vector3(border.x * 2f, amp * 2f, border.y * 2f));
+        Gizmos.matrix = Matrix4x4.identity;
+
+        if (_nodes == null) return;
+
+        for (int i = 0; i < _nodes.Count; i++)
+        {
+            Vector3 world = transform.TransformPoint(_nodes[i]);
+
+            float t = _nodes.Count > 1 ? i / (float)(_nodes.Count - 1) : 0f;
+            Gizmos.color = Color.Lerp(Color.red, Color.green, t);
+            Gizmos.DrawSphere(world, 1f);
+
+#if UNITY_EDITOR
+            UnityEditor.Handles.Label(world + Vector3.up * 1.5f, i.ToString());
+#endif
+        }
     }
 }
