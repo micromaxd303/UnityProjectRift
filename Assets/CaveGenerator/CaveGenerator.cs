@@ -34,6 +34,13 @@ public class CaveGenerator : MonoBehaviour
     public LevelContext Context { get; private set; }
     /// <summary>Уровень построен: меш готов, LevelContext заполнен.</summary>
     public event Action<LevelContext> LevelGenerated;
+    /// <summary>Поле вокселей и анализ последней генерации (этап 4). null, если проверка не запускалась.</summary>
+    public LevelValidationResult Validation => _validation;
+    /// <summary>
+    /// Держать меши пещеры читаемыми после построения (их читает запекание наземного NavMesh).
+    /// Кто включил, тот потом вызывает ReleaseMeshData().
+    /// </summary>
+    public bool KeepMeshesReadable { get; set; }
     // Клетки пола для гизмо: позиция и достижимость от спавна
     private readonly List<Vector3> _walkCells = new();
     private readonly List<bool> _walkReached = new();
@@ -209,6 +216,7 @@ public class CaveGenerator : MonoBehaviour
         bool paint = stampPaint.enabled && _scene != null && !(_voxelDataProvider is VoxelDataGenerator);
         _meshBuilder.Painter = paint ? new StampPainter(_scene, stampPaint) : null;
 
+        _meshBuilder.KeepReadable = KeepMeshesReadable;
         _chunkObjects = _meshBuilder.Build(meshes);
 
         if (enableCulling)
@@ -351,6 +359,9 @@ public class CaveGenerator : MonoBehaviour
     }
     
     [ContextMenu("Clear Cave")]
+    /// <summary>Выгрузить CPU-копии мешей, придержанные ради KeepMeshesReadable.</summary>
+    public void ReleaseMeshData() => _meshBuilder?.FinishReadback();
+
     public void Clear()
     {
         _meshBuilder?.Clear();

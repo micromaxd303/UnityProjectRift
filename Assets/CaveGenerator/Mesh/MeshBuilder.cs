@@ -14,6 +14,12 @@ public sealed class MeshBuilder : IDisposable
 
     /// <summary>Раскраска вершин (цвета штампов). null — меш без vertex color.</summary>
     public IVertexPainter Painter { get; set; }
+
+    /// <summary>
+    /// Не выгружать CPU-копии мешей сразу после построения: их ещё читает запекание
+    /// наземного NavMesh (в билде он не видит нечитаемые меши). Выгрузить — FinishReadback().
+    /// </summary>
+    public bool KeepReadable { get; set; }
     
 
     private sealed class Chunk
@@ -62,6 +68,9 @@ public sealed class MeshBuilder : IDisposable
         foreach (var coord in _stale)
         {
             var c = _chunks[coord];
+            // Destroy в Play отложен до конца кадра: выключаем сразу, чтобы старый чанк
+            // не попал в запекание NavMesh, которое стартует в этом же кадре
+            c.Go.SetActive(false);
             SafeDestroy(c.Mesh);
             SafeDestroy(c.Go);
             _chunks.Remove(coord);
@@ -105,6 +114,16 @@ public sealed class MeshBuilder : IDisposable
             if (c.Mesh.isReadable)
                 c.Mesh.UploadMeshData(markNoLongerReadable: true);
         }
+    }
+
+    /// Выгрузить CPU-копии, придержанные ради KeepReadable. Сырые данные MC (LiveTuning) не трогает.
+    public void FinishReadback()
+    {
+        if (_settings.LiveTuning)
+            return;
+        foreach (var c in _chunks.Values)
+            if (c.Mesh != null && c.Mesh.isReadable)
+                c.Mesh.UploadMeshData(markNoLongerReadable: true);
     }
 
     public void Clear()
@@ -167,7 +186,7 @@ public sealed class MeshBuilder : IDisposable
 
         UpdateCollider(c); // коллайдер печётся ДО выгрузки CPU-данных
 
-        if (!_settings.LiveTuning)
+        if (!_settings.LiveTuning && !KeepReadable)
             mesh.UploadMeshData(markNoLongerReadable: true);
 
         return true;

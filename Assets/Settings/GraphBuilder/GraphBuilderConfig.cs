@@ -66,4 +66,5 @@ public class CaveGraphSettings
     public float arenaSeconds = 180f;
     [Tooltip("Выкл: длительность вне целевого диапазона только пишется в лог.")]
     public bool rejectOnDuration = false;
+    
 }
