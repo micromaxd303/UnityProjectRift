@@ -68,4 +68,5 @@ public class MovementConfig : ScriptableObject
     public float DashDuration = 0.1f;
     public float DashCooldownBetweenUses = 0.1f;
     public float DashMomentumPreserve = 0.3f;
+    
 }

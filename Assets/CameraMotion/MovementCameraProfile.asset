@@ -1,0 +1,121 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb0a6a9303b02fb4b9ca5924833ea93d, type: 3}
+  m_Name: MovementCameraProfile
+  m_EditorClassIdentifier: 
+  Default:
+    State: 0
+    FovOffset: 0
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 0
+    BobFrequency: 1
+    BlendInTime: 0.25
+  States:
+  - State: 0
+    FovOffset: 0
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 0
+    BobFrequency: 1
+    BlendInTime: 0.35
+  - State: 1
+    FovOffset: 0
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 1
+    BobFrequency: 1
+    BlendInTime: 0.25
+  - State: 2
+    FovOffset: 6
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 1.4
+    BobFrequency: 1.1
+    BlendInTime: 0.3
+  - State: 3
+    FovOffset: 0
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 0.6
+    BobFrequency: 0.9
+    BlendInTime: 0.2
+  - State: 4
+    FovOffset: 10
+    Roll: 4
+    Pitch: -1
+    Height: 0
+    BobAmplitude: 0
+    BobFrequency: 1
+    BlendInTime: 0.15
+  - State: 5
+    FovOffset: 0
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 0
+    BobFrequency: 1
+    BlendInTime: 0.15
+  - State: 6
+    FovOffset: 0
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 0
+    BobFrequency: 1
+    BlendInTime: 0.2
+  - State: 7
+    FovOffset: 4
+    Roll: 0
+    Pitch: 0
+    Height: 0
+    BobAmplitude: 0
+    BobFrequency: 1
+    BlendInTime: 0.05
+  StepLength: 2.5
+  BobPosition: {x: 0.025, y: 0.035}
+  BobRotation: {x: 0.6, y: 0.3, z: 0.5}
+  BobFullSpeed: 5
+  BobFadeTime: 0.15
+  IdleBreathRotation: {x: 0.25, y: 0.15, z: 0}
+  IdleBreathFrequency: 0.25
+  StrafeLeanAngle: 1.5
+  StrafeLeanFullSpeed: 6
+  StrafeLeanTime: 0.2
+  FollowCrouchHeight: 0
+  CrouchHeightFollow: 1
+  JumpKick: {x: -1.2, y: -0.04}
+  SlideJumpKickMultiplier: 1.4
+  LandMinFallSpeed: 3
+  LandMaxFallSpeed: 20
+  LandMaxDip: 0.12
+  LandMaxPitch: 4
+  LandMaxRoll: 1.5
+  DashFovPunch: 8
+  DashRollPunch: 3
+  DashPitchPunch: 1.5
+  SlideEnterDip: -0.08
+  SlideSteerRoll: 3
+  PositionSpring:
+    Frequency: 4
+    Damping: 0.65
+  RotationSpring:
+    Frequency: 5
+    Damping: 0.6
+  FovSpring:
+    Frequency: 3
+    Damping: 0.8

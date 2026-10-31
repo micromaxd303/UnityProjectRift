@@ -37,10 +37,11 @@ public class WeaponRaycast : Weapon
             yield return null;
         }
         shootProgress = 1f;
+        Transform aim = AimTransform;
         for (int i = 0; i < weaponConfig.countBulletInOneShot; i++)
         {
             Vector3 dispersion = Random.insideUnitSphere * weaponConfig.dispersion * 0.01f;
-            if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward + dispersion, out RaycastHit hit, weaponConfig.distance))
+            if (Physics.Raycast(aim.position, aim.forward + dispersion, out RaycastHit hit, weaponConfig.distance))
             {
                 IDamageable damageable = hit.collider.GetComponent<IDamageable>();
                 if (damageable != null)
@@ -68,6 +69,7 @@ public class WeaponRaycast : Weapon
             }
         }
         bulletCount--;
+        RaiseShot();
         cooldownProgress = 0f;
         timer = 0f;
         while (timer < weaponConfig.timeCooldownShoot)
@@ -83,6 +85,7 @@ public class WeaponRaycast : Weapon
     {
         isReload = true;
         reloadProgress = 0f;
+        RaiseReloadStarted();
         float timer = 0f;
         while (timer < weaponConfig.rechargeTime)
         {
@@ -95,5 +98,6 @@ public class WeaponRaycast : Weapon
         AllBulletCount -= availableBullet;
         bulletCount += availableBullet;
         isReload = false;
+        RaiseReloadFinished();
     }
 }

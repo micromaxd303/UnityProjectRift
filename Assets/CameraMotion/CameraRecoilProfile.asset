@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15905b373580ae54b8d29bbcc51fe908, type: 3}
+  m_Name: CameraRecoilProfile
+  m_EditorClassIdentifier: 
+  PitchKick: {x: 0.8, y: 1.2}
+  YawKick: 0.3
+  RollKick: 0.6
+  BackKick: 0.02
+  FovKick: 0.8
+  AimPitchKick: {x: 0, y: 0}
+  AimYawKick: 0
+  AimRecovery: 0
+  AimRecoverySpeed: 10
+  ImpulseForce: 0
+  RotationSpring:
+    Frequency: 9
+    Damping: 0.55
+  PositionSpring:
+    Frequency: 10
+    Damping: 0.7
+  FovSpring:
+    Frequency: 8
+    Damping: 0.75
+  ReloadClip: {fileID: 11400000, guid: 5e5aa6e3434e60e4eb5fb410b248d4fc, type: 2}
+  FitReloadClipToReloadTime: 1

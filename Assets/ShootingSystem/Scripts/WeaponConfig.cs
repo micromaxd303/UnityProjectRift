@@ -1,3 +1,4 @@
+using Rift.CameraMotion;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "WeaponConfig", menuName = "Scriptable Objects/Shooting system/WeaponConfig")]
@@ -47,4 +48,7 @@ public class WeaponConfig : ScriptableObject
 
     [Tooltip("Авто стрельба по удержании кнопки")]
     public bool autoShooting;
+
+    [Tooltip("Отдача и движения камеры для этого оружия (необязательно)")]
+    public CameraRecoilProfile cameraRecoil;
 }
